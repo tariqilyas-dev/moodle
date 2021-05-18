@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * frontpage.php
+ *
  * @package   theme_klass
  * @copyright 2015 Lmsace Dev Team,lmsace.com
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -30,8 +32,6 @@ if (right_to_left()) {
     $regionbsid = 'region-bs-main-and-pre';
 }
 
-$PAGE->requires->js('/theme/klass/javascript/bootstrap-carousel.js');
-$PAGE->requires->js('/theme/klass/javascript/bootstrap-transition.js');
 $courserenderer = $PAGE->get_renderer('core', 'course');
 
 echo $OUTPUT->doctype() ?>
@@ -48,7 +48,9 @@ echo $OUTPUT->doctype() ?>
 <?php echo $OUTPUT->standard_top_of_body_html() ?>
 
 <?php
-require_once(dirname(__FILE__) . '/includes/header.php');  ?>
+require_once(dirname(__FILE__) . '/includes/header.php');
+echo $headerlayout;
+ ?>
 <!--Custom theme header-->
 <div class="">
     <?php
@@ -58,29 +60,30 @@ require_once(dirname(__FILE__) . '/includes/header.php');  ?>
     }
     ?>
 </div>
- <?php
-    $who_title = theme_klass_get_setting('whoweare_title');
-    $who_desc = theme_klass_get_setting('whoweare_description');
-    if (!empty($who_title) || !empty($who_desc)) {
+    <?php
+    $whotitle = theme_klass_get_setting('whoweare_title');
+    $whodesc = theme_klass_get_setting('whoweare_description');
+    if (!empty($whotitle) || !empty($whodesc)) {
 ?>
 <!--Custom theme slider-->
 <div class="fp-site-customdesc">
     <div class="container">
-    <h2><?php echo $who_title; ?></h2>
-    <?php if ($who_desc) { ?>
-        <p><?php echo $who_desc; ?></p>
+    <h2><?php echo $whotitle; ?></h2>
+    <?php if ($whodesc) { ?>
+        <p><?php echo $whodesc; ?></p>
         <?php } ?>
   </div>
 </div>
-<?php } ?>
+    <?php
+    } ?>
 <!--Custom theme Who We Are block-->
 <div id="page" class="container">
     <header id="page-header" class="clearfix">
         <?php echo $html->heading; ?>
-        <div id="page-navbar" class="clearfix">
-            <nav class="breadcrumb-nav"><?php echo $OUTPUT->navbar(); ?></nav>
-            <div class="breadcrumb-button"><?php echo $OUTPUT->page_heading_button(); ?></div>
-        </div>
+        <!-- <div id="page-navbar" class="clearfix">
+            <nav class="breadcrumb-nav"><?php //echo $OUTPUT->navbar(); ?></nav>
+            <div class="breadcrumb-button"><?php //echo $OUTPUT->page_heading_button(); ?></div>
+        </div> -->
         <div id="course-header">
             <?php echo $OUTPUT->course_header(); ?>
         </div>
@@ -95,7 +98,7 @@ require_once(dirname(__FILE__) . '/includes/header.php');  ?>
     ?>
         <div id="<?php echo $regionbsid ?>"  class="<?php echo $class; ?>">
                     <?php
-                     echo $courserenderer->new_courses();
+                        //echo $courserenderer->new_courses();
                         echo $OUTPUT->course_content_header();
                         echo $OUTPUT->main_content();
                         echo $OUTPUT->course_content_footer();
@@ -106,7 +109,11 @@ require_once(dirname(__FILE__) . '/includes/header.php');  ?>
     </div>
     <?php echo (isset($flatnavbar)) ? $flatnavbar : ""; ?>
 </div>
-<?php  require_once(dirname(__FILE__) . '/includes/footer.php');  ?>
+<?php
+    require_once(dirname(__FILE__) . '/includes/footer.php');
+    echo $footerlayout;
+
+?>
 <!--Custom theme footer-->
 
 </body>

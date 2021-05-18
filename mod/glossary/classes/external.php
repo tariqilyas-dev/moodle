@@ -169,7 +169,7 @@ class mod_glossary_external extends external_api {
     /**
      * Describes the parameters for get_glossaries_by_courses.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_glossaries_by_courses_parameters() {
@@ -217,8 +217,10 @@ class mod_glossary_external extends external_api {
             foreach ($glossaries as $glossary) {
                 $context = context_module::instance($glossary->coursemodule);
                 $glossary->name = external_format_string($glossary->name, $context->id);
-                list($glossary->intro, $glossary->introformat) = external_format_text($glossary->intro, $glossary->introformat,
-                    $context->id, 'mod_glossary', 'intro', null);
+                $options = array('noclean' => true);
+                list($glossary->intro, $glossary->introformat) =
+                    external_format_text($glossary->intro, $glossary->introformat, $context->id, 'mod_glossary', 'intro', null,
+                        $options);
                 $glossary->introfiles = external_util::get_area_files($context->id, 'mod_glossary', 'intro', false, false);
 
                 // Make sure we have a number of entries per page.
@@ -486,6 +488,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -502,6 +505,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure()
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -583,6 +587,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -599,6 +604,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure()
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -760,6 +766,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -776,6 +783,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure(true)
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -954,6 +962,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -970,6 +979,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure()
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -1057,6 +1067,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -1073,6 +1084,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure()
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -1158,6 +1170,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -1174,6 +1187,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure()
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -1238,6 +1252,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -1254,6 +1269,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure()
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -1324,6 +1340,7 @@ class mod_glossary_external extends external_api {
         return array(
             'count' => $count,
             'entries' => $entries,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry', $entries),
             'warnings' => $warnings
         );
     }
@@ -1340,6 +1357,7 @@ class mod_glossary_external extends external_api {
             'entries' => new external_multiple_structure(
                 self::get_entry_return_structure()
             ),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }
@@ -1385,6 +1403,8 @@ class mod_glossary_external extends external_api {
 
         return array(
             'entry' => $entry,
+            'ratinginfo' => \core_rating\external\util::get_rating_info($glossary, $context, 'mod_glossary', 'entry',
+                array($entry)),
             'warnings' => $warnings
         );
     }
@@ -1398,6 +1418,7 @@ class mod_glossary_external extends external_api {
     public static function get_entry_by_id_returns() {
         return new external_single_structure(array(
             'entry' => self::get_entry_return_structure(),
+            'ratinginfo' => \core_rating\external\util::external_ratings_structure(),
             'warnings' => new external_warnings()
         ));
     }

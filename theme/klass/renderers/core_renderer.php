@@ -15,20 +15,25 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * renderers/core_renderer.php
+ *
  * @package    theme_klass
  * @copyright  2015 onwards LMSACE Dev Team (http://www.lmsace.com)
- * @authors    LMSACE Dev Team
+ * @author    LMSACE Dev Team
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
 /**
- *  Klass theme core rederer class
+ * Klass theme core renderer class
+ * @copyright  2015 onwards LMSACE Dev Team (http://www.lmsace.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class theme_klass_core_renderer extends theme_boost\output\core_renderer {
     /**
      * Header custom menu renderer.
+     *
      * @param custom_menu $menu
-     * @return type
+     * @return string
      */
     public function custom_menu_render(custom_menu $menu) {
         global $CFG;

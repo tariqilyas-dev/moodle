@@ -12,8 +12,6 @@ $page         = optional_param('page', 0, PARAM_INT);
 $perpage      = optional_param('perpage', 30, PARAM_INT);
 $action       = trim(strtolower(optional_param('action', '', PARAM_ALPHA)));
 
-require_login();
-
 admin_externalpage_setup('ssoaccesscontrol');
 
 if (!extension_loaded('openssl')) {
@@ -150,7 +148,7 @@ foreach ($columns as $column) {
     } else {
         $columndir = $dir == "ASC" ? "DESC" : "ASC";
         $columnicon = $dir == "ASC" ? "down" : "up";
-        $columnicon = " <img src=\"" . $OUTPUT->pix_url('t/' . $columnicon) . "\" alt=\"\" />";
+        $columnicon = " " . $OUTPUT->pix_icon('t/' . $columnicon, get_string('sort'));
     }
     $headings[$column] = "<a href=\"?sort=$column&amp;dir=$columndir&amp;\">".$string[$column]."</a>$columnicon";
 }

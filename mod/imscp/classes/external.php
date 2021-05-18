@@ -107,7 +107,7 @@ class mod_imscp_external extends external_api {
     /**
      * Describes the parameters for get_imscps_by_courses.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.0
      */
     public static function get_imscps_by_courses_parameters() {
@@ -163,8 +163,10 @@ class mod_imscp_external extends external_api {
 
                 if (has_capability('mod/imscp:view', $context)) {
                     // Format intro.
+                    $options = array('noclean' => true);
                     list($imscpdetails['intro'], $imscpdetails['introformat']) =
-                        external_format_text($imscp->intro, $imscp->introformat, $context->id, 'mod_imscp', 'intro', null);
+                        external_format_text($imscp->intro, $imscp->introformat, $context->id, 'mod_imscp', 'intro', null,
+                            $options);
                     $imscpdetails['introfiles'] = external_util::get_area_files($context->id, 'mod_imscp', 'intro', false, false);
                 }
 

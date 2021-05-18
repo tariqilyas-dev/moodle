@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * settings.php
+ *
  * @package   theme_klass
  * @copyright 2015 LMSACE Dev Team, lmsace.com
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -132,7 +134,14 @@ if (is_siteadmin()) {
         $description = get_string('slidecaptiondesc', 'theme_klass');
         $default = get_string('slidecaptiondefault', 'theme_klass', array('slideno' => sprintf('%02d', $i) ));
         $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT);
-       // $setting->set_updatedcallback('theme_reset_all_caches');
+        $temp->add($setting);
+
+        // Slider button.
+        $name = 'theme_klass/slide' . $i . 'urltext';
+        $title = get_string('slidebutton', 'theme_klass');
+        $description = get_string('slidebuttondesc', 'theme_klass');
+        $default = 'lang:knowmore';
+        $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT);
         $temp->add($setting);
 
         // Slide Description Text.
@@ -166,7 +175,6 @@ if (is_siteadmin()) {
     $description = get_string('footnotedesc', 'theme_klass');
     $default = get_string('footnotedefault', 'theme_klass');
     $setting = new admin_setting_confightmleditor($name, $title, $description, $default);
-    //$setting->set_updatedcallback('theme_reset_all_caches');
     $temp->add($setting);
 
     // INFO Link.
@@ -175,7 +183,6 @@ if (is_siteadmin()) {
     $description = get_string('infolink_desc', 'theme_klass');
     $default = get_string('infolinkdefault', 'theme_klass');
     $setting = new admin_setting_configtextarea($name, $title, $description, $default);
-   // $setting->set_updatedcallback('theme_reset_all_caches');
     $temp->add($setting);
 
     // Copyright.
@@ -238,6 +245,5 @@ if (is_siteadmin()) {
     $temp->add($setting);
 
     $settings->add($temp);
-    // $ADMIN->add('theme_klass', $settings);
     /*  Footer Settings end */
 }

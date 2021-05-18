@@ -320,6 +320,24 @@ class block_manager {
     }
 
     /**
+     * Returns an array of block content objects for all the existings regions
+     *
+     * @param renderer_base $output the rendered to use
+     * @return array of block block_contents objects for all the blocks in all regions.
+     * @since  Moodle 3.3
+     */
+    public function get_content_for_all_regions($output) {
+        $contents = array();
+        $this->check_is_loaded();
+
+        foreach ($this->regions as $region => $val) {
+            $this->ensure_content_created($region, $output);
+            $contents[$region] = $this->visibleblockcontent[$region];
+        }
+        return $contents;
+    }
+
+    /**
      * Helper method used by get_content_for_region.
      * @param string $region region name
      * @param float $weight weight. May be fractional, since you may want to move a block
@@ -501,6 +519,11 @@ class block_manager {
             }
         }
         $this->regions[$region] = 1;
+
+        // Checking the actual property instead of calling get_default_region as it ends up in a recursive call.
+        if (empty($this->defaultregion)) {
+            $this->set_default_region($region);
+        }
     }
 
     /**
@@ -782,6 +805,7 @@ class block_manager {
                 $unknown[] = $bi;
             }
         }
+        $blockinstances->close();
 
         // Pages don't necessarily have a defaultregion. The  one time this can
         // happen is when there are no theme block regions, but the script itself
@@ -823,6 +847,8 @@ class block_manager {
         $blockinstance->defaultregion = $region;
         $blockinstance->defaultweight = $weight;
         $blockinstance->configdata = '';
+        $blockinstance->timecreated = time();
+        $blockinstance->timemodified = $blockinstance->timecreated;
         $blockinstance->id = $DB->insert_record('block_instances', $blockinstance);
 
         // Ensure the block context is created.
@@ -930,6 +956,7 @@ class block_manager {
             $newbi->id = $bi->id;
             $newbi->defaultregion = $newregion;
             $newbi->defaultweight = $newweight;
+            $newbi->timemodified = time();
             $DB->update_record('block_instances', $newbi);
 
             if ($bi->blockpositionid) {
@@ -1152,6 +1179,8 @@ class block_manager {
         $blockinstance->defaultregion = $defaultregion;
         $blockinstance->defaultweight = 0;
         $blockinstance->configdata = '';
+        $blockinstance->timecreated = time();
+        $blockinstance->timemodified = $blockinstance->timecreated;
         $blockinstance->id = $DB->insert_record('block_instances', $blockinstance);
 
         // Ensure the block context is created.
@@ -1352,6 +1381,30 @@ class block_manager {
                 $str,
                 array('class' => 'editing_delete')
             );
+        }
+
+        if (!empty($CFG->contextlocking) && has_capability('moodle/site:managecontextlocks', $block->context)) {
+            $parentcontext = $block->context->get_parent_context();
+            if (empty($parentcontext) || empty($parentcontext->locked)) {
+                if ($block->context->locked) {
+                    $lockicon = 'i/unlock';
+                    $lockstring = get_string('managecontextunlock', 'admin');
+                } else {
+                    $lockicon = 'i/lock';
+                    $lockstring = get_string('managecontextlock', 'admin');
+                }
+                $controls[] = new action_menu_link_secondary(
+                    new moodle_url(
+                        '/admin/lock.php',
+                        [
+                            'id' => $block->context->id,
+                        ]
+                    ),
+                    new pix_icon($lockicon, $lockstring, 'moodle', array('class' => 'iconsmall', 'title' => '')),
+                    $lockstring,
+                    ['class' => 'editing_lock']
+                );
+            }
         }
 
         return $controls;
@@ -1713,6 +1766,7 @@ class block_manager {
 
             $bi->defaultregion = $data->bui_defaultregion;
             $bi->defaultweight = $data->bui_defaultweight;
+            $bi->timemodified = time();
             $DB->update_record('block_instances', $bi);
 
             if (!empty($block->config)) {
@@ -1934,6 +1988,20 @@ function block_method_result($blockname, $method, $param = NULL) {
         return NULL;
     }
     return call_user_func(array('block_'.$blockname, $method), $param);
+}
+
+/**
+ * Returns a new instance of the specified block instance id.
+ *
+ * @param int $blockinstanceid
+ * @return block_base the requested block instance.
+ */
+function block_instance_by_id($blockinstanceid) {
+    global $DB;
+
+    $blockinstance = $DB->get_record('block_instances', ['id' => $blockinstanceid]);
+    $instance = block_instance($blockinstance->blockname, $blockinstance);
+    return $instance;
 }
 
 /**
@@ -2544,7 +2612,7 @@ function blocks_add_default_system_blocks() {
         $subpagepattern = null;
     }
 
-    $newblocks = array('private_files', 'online_users', 'badges', 'calendar_month', 'calendar_upcoming');
-    $newcontent = array('lp', 'course_overview');
+    $newblocks = array('timeline', 'private_files', 'online_users', 'badges', 'calendar_month', 'calendar_upcoming');
+    $newcontent = array('lp', 'recentlyaccessedcourses', 'myoverview');
     $page->blocks->add_blocks(array(BLOCK_POS_RIGHT => $newblocks, 'content' => $newcontent), 'my-index', $subpagepattern);
 }

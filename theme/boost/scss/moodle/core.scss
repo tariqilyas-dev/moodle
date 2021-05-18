@@ -1,9 +1,16 @@
 /* core.less */
 
-#region-main > .card {
+// When we upgrade boostrap to v4 release, we will need to change this to be used by the text-white class.
+// Because a primary colour that is both AA accessible on grey (footer) and white is not possible, we always
+// want white default colour.
+$bg-inverse-link-color: #fff !default;
+
+#region-main {
     overflow-x: auto;
     overflow-y: visible;
-    min-height: 45rem;
+    border: $card-border-width solid $card-border-color;
+    padding: $card-spacer-x;
+    background-color: $body-bg;
 }
 
 .context-header-settings-menu,
@@ -19,6 +26,7 @@
 .context-header-settings-menu .dropdown-toggle > .icon,
 #region-main-settings-menu .dropdown-toggle > .icon {
     height: 24px;
+    font-size: 24px;
     width: auto;
 }
 /** Prevent user notifications overlapping with region main settings menu */
@@ -75,10 +83,6 @@ a.dimmed_text:visited,
 .dimmed_category,
 .dimmed_category a {
     @extend .text-muted;
-}
-
-.activity.label .dimmed_text {
-    opacity: 0.5;
 }
 
 .unlist,
@@ -142,6 +146,13 @@ a.autolink.glossary:hover {
 
 .pagelayout-mydashboard.jsenabled .collapsibleregioncaption {
     cursor: pointer;
+}
+
+.pagelayout-mydashboard #region-main {
+    border: 0;
+    padding: 0;
+    background-color: transparent;
+    margin-top: -1px;
 }
 
 .collapsibleregioncaption img {
@@ -238,12 +249,7 @@ img.resize {
     white-space: nowrap;
 }
 
-.action-menu .userpicture {
-    margin-left: 1rem;
-}
-
-.block img.resize,
-.breadcrumb img.resize {
+.block img.resize {
     height: 0.9em;
     width: 0.8em;
 }
@@ -289,17 +295,18 @@ form.popupform div {
     overflow: auto;
 }
 
+// Minimum height required for a menu in a table inside a scrollable div.
+// Position required for table sizing inside a flex container.
 .no-overflow > .generaltable {
+    position: relative;
     margin-bottom: 0;
+    min-height: 10em;
 }
 // Accessibility features
 
 // Accessibility: text 'seen' by screen readers but not visual users.
 .accesshide {
-    position: absolute;
-    left: -10000px;
-    font-weight: normal;
-    font-size: 1em;
+    @include sr-only();
 }
 
 span.hide,
@@ -347,9 +354,6 @@ a.skip:active {
     margin-left: 43px;
 }
 // Group
-#page-group-index #groupeditform {
-    text-align: center;
-}
 
 #doc-contents h1 {
     margin: 1em 0 0 0;
@@ -886,106 +890,6 @@ tr.flagged-tag a {
     text-align: left;
     border: 0 solid black;
 }
-/**
-* Smart Select Element
-*/
-.smartselect {
-    position: absolute;
-}
-
-.smartselect .smartselect_mask {
-    background-color: #fff;
-}
-
-.smartselect ul {
-    padding: 0;
-    margin: 0;
-}
-
-.smartselect ul li {
-    list-style: none;
-}
-
-.smartselect .smartselect_menu {
-    margin-right: 5px;
-}
-
-.safari .smartselect .smartselect_menu {
-    margin-left: 2px;
-}
-
-.smartselect .smartselect_menu,
-.smartselect .smartselect_submenu {
-    border: 1px solid #000;
-    background-color: #fff;
-    display: none;
-}
-
-.smartselect .smartselect_menu.visible,
-.smartselect .smartselect_submenu.visible {
-    display: block;
-}
-
-.smartselect .smartselect_menu_content ul li {
-    position: relative;
-    padding: 2px 5px;
-}
-
-.smartselect .smartselect_menu_content ul li a {
-    color: #333;
-    text-decoration: none;
-}
-
-.smartselect .smartselect_menu_content ul li a.selectable {
-    color: inherit;
-}
-
-.smartselect .smartselect_submenuitem {
-    background-image: url([[pix:moodle|t/collapsed]]);
-    background-repeat: no-repeat;
-    background-position: 100%;
-}
-/** Spanning mode */
-.smartselect.spanningmenu .smartselect_submenu {
-    position: absolute;
-    top: -1px;
-    left: 100%;
-}
-
-.smartselect.spanningmenu .smartselect_submenu a {
-    white-space: nowrap;
-    padding-right: 16px;
-}
-
-.smartselect.spanningmenu .smartselect_menu_content ul li a.selectable:hover {
-    text-decoration: underline;
-}
-/** Compact mode */
-.smartselect.compactmenu .smartselect_submenu {
-    position: relative;
-    margin: 2px -3px;
-    margin-left: 10px;
-    display: none;
-    border-width: 0;
-    z-index: 1010;
-}
-
-.smartselect.compactmenu .smartselect_submenu.visible {
-    display: block;
-}
-
-.smartselect.compactmenu .smartselect_menu {
-    z-index: 1000;
-    overflow: hidden;
-}
-
-.smartselect.compactmenu .smartselect_submenu .smartselect_submenu {
-    z-index: 1020;
-}
-
-.smartselect.compactmenu .smartselect_submenuitem:hover > .smartselect_menuitem_label {
-    font-weight: bold;
-}
 
 /**
 * Enrol
@@ -1030,17 +934,17 @@ tr.flagged-tag a {
     margin-right: 30px;
 }
 
-.userenrolment .col_group .group {
-    float: left;
-    padding: 3px;
-    margin: 3px;
-    white-space: nowrap;
-}
-
 .userenrolment .col_role .role {
     float: left;
     padding: 0 3px 3px;
     margin: 0 3px 3px;
+    white-space: nowrap;
+}
+
+.userenrolment .col_group .group {
+    float: left;
+    padding: 3px;
+    margin: 3px;
     white-space: nowrap;
 }
 
@@ -1193,17 +1097,21 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
     text-align: center;
 }
 
-.initialbar {
-    a,
-    strong {
-        padding-left: 3px;
-        padding-right: 3px;
-    }
-}
-
 /* Moodle Dialogue Settings (moodle-core-dialogue)  */
 .moodle-dialogue-base .moodle-dialogue-lightbox {
     background-color: $gray;
+}
+
+// Prevent adding backdrops to popups in popups.
+.pagelayout-popup {
+    .moodle-dialogue-base {
+        .moodle-dialogue-lightbox {
+            background-color: transparent;
+        }
+        .moodle-dialogue {
+            box-shadow: $popover-box-shadow;
+        }
+    }
 }
 
 .moodle-dialogue-base .hidden,
@@ -1263,6 +1171,7 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 
 .moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd h1 {
     @extend .modal-title;
+    font-size: 1.5rem;
 }
 
 .moodle-dialogue-base .moodle-dialogue-wrap .moodle-dialogue-hd .yui3-widget-buttons {
@@ -1282,7 +1191,7 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 }
 
 .moodle-dialogue-base .moodle-dialogue .moodle-dialogue-bd {
-    @extend .modal-body;
+    padding: 0.5rem;
 }
 
 .moodle-dialogue-base .moodle-dialogue-fullscreen .moodle-dialogue-content {
@@ -1341,10 +1250,7 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 }
 
 .moodle-dialogue-confirm .confirmation-message {
-    margin: 0.5em 1em;
-}
-.moodle-dialogue-confirm .confirmation-buttons {
-    text-align: right;
+    margin: 0.5rem 0;
 }
 
 .moodle-dialogue-confirm .confirmation-dialogue input {
@@ -1445,7 +1351,7 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 /* Fixed for safari browser on iPhone4S with ios7@mixin */
 
 @media (max-height: 639px) {
-    .ios.safari .choosercontainer #chooseform .submitbuttons {
+    .ios .choosercontainer #chooseform .submitbuttons {
         padding: 45px 0;
     }
 }
@@ -1561,6 +1467,7 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 .chooserdialogue-course-modchooser .modicon .icon {
     width: 24px;
     height: 24px;
+    font-size: 24px;
 }
 
 @include media-breakpoint-down(xs) {
@@ -1846,18 +1753,6 @@ img#persona_signin {
     border-width: 0;
 }
 
-.breadcrumb-nav {
-    float: left;
-}
-
-.breadcrumb-button .singlebutton div {
-    margin-right: 0;
-}
-
-.breadcrumb-nav .breadcrumb {
-    margin: 0;
-}
-
 /** Page header */
 #page-header {
     .logo {
@@ -1868,16 +1763,9 @@ img#persona_signin {
     }
 }
 
-/** Header. */
-header {
-    .logo img {
-        max-height: 35px;
-    }
-    .collapse.in,
-    .collapsing {
-        display: block;
-        clear: both;
-    }
+/** Navbar logo. */
+nav.navbar .logo img {
+    max-height: 35px;
 }
 
 /** Header-bar styles **/
@@ -2007,6 +1895,10 @@ dd:after {
     &.inplaceeditable-toggle .quickediticon {
         display: none;
     }
+
+    &.inplaceeditable-autocomplete {
+        display: block;
+    }
 }
 
 h3.sectionname .inplaceeditable.inplaceeditingon .editinstructions {
@@ -2134,9 +2026,30 @@ ul {
     }
 }
 
-$footer-link-color: $brand-primary !default;
+// Footer link colour was added to allow the colour of footer links to be changed,
+// but really in bootstrap we want the colour of links on .bg-inverse to be changed
+// rather than being specific to the footer. This is kept for backwards compatibility.
+$footer-link-color: $bg-inverse-link-color !default;
 #page-footer a {
     color: $footer-link-color;
+    text-decoration: underline;
+    .icon {
+        color: $footer-link-color;
+    }
+}
+
+.bg-inverse a {
+    color: $bg-inverse-link-color;
+    text-decoration: underline;
+    .icon {
+        color: $bg-inverse-link-color;
+    }
+}
+
+.sitelink {
+    img {
+        width: 112px;
+    }
 }
 
 // Make links in a menu clickable anywhere in the row.
@@ -2144,6 +2057,9 @@ $footer-link-color: $brand-primary !default;
     display: block;
     width: 100%;
     color: $body-color;
+}
+.dropdown-item:active a {
+    color: $dropdown-link-active-color;
 }
 
 .competency-tree {
@@ -2162,4 +2078,187 @@ $footer-link-color: $brand-primary !default;
         left: 0;
         top: 0;
     }
+}
+
+[data-drag-type="move"] {
+    cursor: move;
+    touch-action: none;
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.overlay-icon-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.6);
+
+    .loading-icon {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+
+        .icon {
+            height: 30px;
+            width: 30px;
+            font-size: 30px;
+        }
+    }
+}
+
+.open.atto_menu > .dropdown-menu {
+    display: block;
+}
+div.editor_atto_toolbar button .icon {
+    color: $gray-700;
+}
+.w-auto {
+    width: auto;
+}
+
+.bg-pulse-grey {
+    animation: bg-pulse-grey 2s infinite linear;
+}
+
+@keyframes bg-pulse-grey {
+    0% {
+        background-color: $gray-100;
+    }
+    50% {
+        background-color: darken($gray-100, 5%);
+    }
+    100% {
+        background-color: $gray-100;
+    }
+}
+
+@each $size, $length in $spacers {
+    .line-height-#{$size} {
+        line-height: $length !important; /* stylelint-disable-line declaration-no-important */
+    }
+}
+
+.dir-rtl {
+    .dir-rtl-hide {
+        display: none;
+    }
+}
+
+.dir-ltr {
+    .dir-ltr-hide {
+        display: none;
+    }
+}
+
+$switch-height: ($input-height-inner * .8) !default;
+$switch-height-half: ($switch-height / 2) !default;
+$switch-border-radius: $switch-height !default;
+$switch-bg: $custom-control-indicator-bg !default;
+$switch-checked-bg: map-get($theme-colors, 'primary') !default;
+$switch-disabled-bg: $custom-control-indicator-disabled-bg !default;
+$switch-disabled-color: $custom-control-label-disabled-color !default;
+$switch-thumb-bg: $white !default;
+$switch-thumb-border-radius: 50% !default;
+$switch-thumb-padding: 2px !default;
+$switch-thumb-padding-double: ($switch-thumb-padding * 2) !default;
+$switch-focus-box-shadow: 0 0 0 $input-btn-focus-width rgba(map-get($theme-colors, 'primary'), .25);
+$switch-transition: .2s all !default;
+
+.switch {
+    position: relative;
+
+    input {
+        float: left;
+        width: 1px;
+        transform: translateX(1px);
+        padding: 0;
+        margin: 0;
+        opacity: 0;
+
+        + label {
+            position: relative;
+            min-height: $switch-height;
+            min-width: $switch-height * 2;
+            line-height: $switch-height;
+            border-radius: $switch-border-radius;
+            display: inline-block;
+            cursor: pointer;
+            outline: none;
+            user-select: none;
+            vertical-align: middle;
+            padding-left: (($switch-height * 2) + .5rem);
+        }
+
+        + label::before,
+        + label::after {
+            content: '';
+            position: absolute;
+            top: calc(50% - #{$switch-height-half});
+            left: 0;
+            width: ($switch-height * 2);
+            height: $switch-height;
+            bottom: 0;
+            display: block;
+        }
+
+        + label::before {
+            right: 0;
+            background-color: $switch-bg;
+            border-radius: $switch-border-radius;
+            transition: $switch-transition;
+        }
+
+        + label::after {
+            margin-top: $switch-thumb-padding;
+            left: $switch-thumb-padding;
+            width: calc(#{$switch-height} - #{$switch-thumb-padding-double});
+            height: calc(#{$switch-height} - #{$switch-thumb-padding-double});
+            border-radius: $switch-thumb-border-radius;
+            background-color: $switch-thumb-bg;
+            transition: $switch-transition;
+        }
+
+        &:checked + label::before {
+            background-color: $switch-checked-bg;
+        }
+
+        &:checked + label::after {
+            margin-left: $switch-height;
+        }
+
+        &:focus + label::before {
+            outline: none;
+            box-shadow: $switch-focus-box-shadow;
+        }
+
+        &:disabled + label {
+            color: $switch-disabled-color;
+            cursor: not-allowed;
+        }
+
+        &:disabled + label::before {
+            background-color: $switch-disabled-bg;
+        }
+    }
+}
+
+.paged-content-page-container {
+    min-height: 3.125rem;
+}
+
+.text-decoration-none {
+    text-decoration: none !important; /* stylelint-disable-line declaration-no-important */
+}
+
+.position-right {
+    right: 0 !important; /* stylelint-disable-line declaration-no-important */
+}
+
+.z-index-1 {
+    z-index: 1 !important; /* stylelint-disable-line declaration-no-important */
 }

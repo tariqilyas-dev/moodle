@@ -31,9 +31,6 @@ use preferences_groups;
 use action_menu;
 use help_icon;
 use single_button;
-use single_select;
-use paging_bar;
-use url_select;
 use context_course;
 use pix_icon;
 
@@ -64,7 +61,7 @@ class core_renderer extends \core_renderer {
         if (is_array($classes)) {
             $classes = implode(' ', $classes);
         }
-        return parent::box_start($classes . ' p-y-1', $id, $attributes);
+        return parent::box_start($classes . ' py-3', $id, $attributes);
     }
 
     /**
@@ -75,29 +72,14 @@ class core_renderer extends \core_renderer {
     public function full_header() {
         global $PAGE;
 
-        $html = html_writer::start_tag('header', array('id' => 'page-header', 'class' => 'row'));
-        $html .= html_writer::start_div('col-xs-12 p-a-1');
-        $html .= html_writer::start_div('card');
-        $html .= html_writer::start_div('card-block');
-        $html .= html_writer::div($this->context_header_settings_menu(), 'pull-xs-right context-header-settings-menu');
-        $html .= html_writer::start_div('pull-xs-left');
-        $html .= $this->context_header();
-        $html .= html_writer::end_div();
-        $pageheadingbutton = $this->page_heading_button();
-        if (empty($PAGE->layout_options['nonavbar'])) {
-            $html .= html_writer::start_div('clearfix w-100 pull-xs-left', array('id' => 'page-navbar'));
-            $html .= html_writer::tag('div', $this->navbar(), array('class' => 'breadcrumb-nav'));
-            $html .= html_writer::div($pageheadingbutton, 'breadcrumb-button pull-xs-right');
-            $html .= html_writer::end_div();
-        } else if ($pageheadingbutton) {
-            $html .= html_writer::div($pageheadingbutton, 'breadcrumb-button nonavbar pull-xs-right');
-        }
-        $html .= html_writer::tag('div', $this->course_header(), array('id' => 'course-header'));
-        $html .= html_writer::end_div();
-        $html .= html_writer::end_div();
-        $html .= html_writer::end_div();
-        $html .= html_writer::end_tag('header');
-        return $html;
+        $header = new stdClass();
+        $header->settingsmenu = $this->context_header_settings_menu();
+        $header->contextheader = $this->context_header();
+        $header->hasnavbar = empty($PAGE->layout_options['nonavbar']);
+        $header->navbar = $this->navbar();
+        $header->pageheadingbutton = $this->page_heading_button();
+        $header->courseheader = $this->course_header();
+        return $this->render_from_template('theme_boost/header', $header);
     }
 
     /**
@@ -149,7 +131,7 @@ class core_renderer extends \core_renderer {
         if ($this->should_display_main_logo($headinglevel)) {
             $sitename = format_string($SITE->fullname, true, array('context' => context_course::instance(SITEID)));
             return html_writer::div(html_writer::empty_tag('img', [
-                'src' => $this->get_logo_url(null, 150), 'alt' => $sitename]), 'logo');
+                'src' => $this->get_logo_url(null, 150), 'alt' => $sitename, 'class' => 'img-fluid']), 'logo');
         }
 
         return parent::context_header($headerinfo, $headinglevel);
@@ -354,6 +336,7 @@ class core_renderer extends \core_renderer {
         $context->showskiplink = !empty($context->skiptitle);
         $context->arialabel = $bc->arialabel;
         $context->ariarole = !empty($bc->attributes['role']) ? $bc->attributes['role'] : 'complementary';
+        $context->class = $bc->attributes['class'];
         $context->type = $bc->attributes['data-block'];
         $context->title = $bc->title;
         $context->content = $bc->content;
@@ -408,20 +391,6 @@ class core_renderer extends \core_renderer {
         }
         $context = $menu->export_for_template($this);
 
-        // We do not want the icon with the caret, the caret is added by Bootstrap.
-        if (empty($context->primary->menutrigger)) {
-            $newurl = $this->pix_url('t/edit', 'moodle');
-            $context->primary->icon['attributes'] = array_reduce($context->primary->icon['attributes'],
-                function($carry, $item) use ($newurl) {
-                    if ($item['name'] === 'src') {
-                        $item['value'] = $newurl->out(false);
-                    }
-                    $carry[] = $item;
-                    return $carry;
-                }, []
-            );
-        }
-
         return $this->render_from_template('core/action_menu', $context);
     }
 
@@ -449,80 +418,32 @@ class core_renderer extends \core_renderer {
     }
 
     /**
-     * Renders a single select.
-     *
-     * @param single_select $select The object.
-     * @return string HTML
-     */
-    protected function render_single_select(single_select $select) {
-        return $this->render_from_template('core/single_select', $select->export_for_template($this));
-    }
-
-    /**
-     * Renders a paging bar.
-     *
-     * @param paging_bar $pagingbar The object.
-     * @return string HTML
-     */
-    protected function render_paging_bar(paging_bar $pagingbar) {
-        // Any more than 10 is not usable and causes wierd wrapping of the pagination in this theme.
-        $pagingbar->maxdisplay = 10;
-        return $this->render_from_template('core/paging_bar', $pagingbar->export_for_template($this));
-    }
-
-    /**
-     * Renders a url select.
-     *
-     * @param url_select $select The object.
-     * @return string HTML
-     */
-    protected function render_url_select(url_select $select) {
-        return $this->render_from_template('core/url_select', $select->export_for_template($this));
-    }
-
-    /**
-     * Renders a pix_icon widget and returns the HTML to display it.
-     *
-     * @param pix_icon $icon
-     * @return string HTML fragment
-     */
-    protected function render_pix_icon(pix_icon $icon) {
-        $data = $icon->export_for_template($this);
-        foreach ($data['attributes'] as $key => $item) {
-            $name = $item['name'];
-            $value = $item['value'];
-            if ($name == 'class') {
-                $data['extraclasses'] = $value;
-                unset($data['attributes'][$key]);
-                $data['attributes'] = array_values($data['attributes']);
-                break;
-            }
-        }
-        return $this->render_from_template('core/pix_icon', $data);
-    }
-
-    /**
      * Renders the login form.
      *
      * @param \core_auth\output\login $form The renderable.
      * @return string
      */
     public function render_login(\core_auth\output\login $form) {
-        global $SITE;
+        global $CFG, $SITE;
 
         $context = $form->export_for_template($this);
 
         // Override because rendering is not supported in template yet.
-        $context->cookieshelpiconformatted = $this->help_icon('cookiesenabled');
+        if ($CFG->rememberusername == 0) {
+            $context->cookieshelpiconformatted = $this->help_icon('cookiesenabledonlysession');
+        } else {
+            $context->cookieshelpiconformatted = $this->help_icon('cookiesenabled');
+        }
         $context->errorformatted = $this->error_text($context->error);
         $url = $this->get_logo_url();
         if ($url) {
             $url = $url->out(false);
         }
         $context->logourl = $url;
-        $context->sitename = format_string($SITE->fullname, true, ['context' => context_course::instance(SITEID), "escape" => false]);
+        $context->sitename = format_string($SITE->fullname, true,
+            ['context' => context_course::instance(SITEID), "escape" => false]);
 
-        return $this->render_from_template('core/login', $context);
+        return $this->render_from_template('core/loginform', $context);
     }
 
     /**
@@ -540,7 +461,8 @@ class core_renderer extends \core_renderer {
             $url = $url->out(false);
         }
         $context['logourl'] = $url;
-        $context['sitename'] = format_string($SITE->fullname, true, ['context' => context_course::instance(SITEID), "escape" => false]);
+        $context['sitename'] = format_string($SITE->fullname, true,
+            ['context' => context_course::instance(SITEID), "escape" => false]);
 
         return $this->render_from_template('core/signup_form_layout', $context);
     }
@@ -604,7 +526,6 @@ class core_renderer extends \core_renderer {
             $showusermenu = true;
         }
 
-
         if ($showfrontpagemenu) {
             $settingsnode = $this->page->settingsnav->find('frontpage', navigation_node::TYPE_SETTING);
             if ($settingsnode) {
@@ -615,7 +536,7 @@ class core_renderer extends \core_renderer {
                 if ($skipped) {
                     $text = get_string('morenavigationlinks');
                     $url = new moodle_url('/course/admin.php', array('courseid' => $this->page->course->id));
-                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
+                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', ''));
                     $menu->add_secondary_action($link);
                 }
             }
@@ -629,7 +550,7 @@ class core_renderer extends \core_renderer {
                 if ($skipped) {
                     $text = get_string('morenavigationlinks');
                     $url = new moodle_url('/course/admin.php', array('courseid' => $this->page->course->id));
-                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
+                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', ''));
                     $menu->add_secondary_action($link);
                 }
             }
@@ -749,7 +670,7 @@ class core_renderer extends \core_renderer {
                     $link = new action_link(new moodle_url('#'), $menuitem->text, null, ['disabled' => true], $menuitem->icon);
                 }
                 if ($indent) {
-                    $link->add_class('m-l-1');
+                    $link->add_class('ml-4');
                 }
                 if (!empty($menuitem->classes)) {
                     $link->add_class(implode(" ", $menuitem->classes));

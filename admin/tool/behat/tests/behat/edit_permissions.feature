@@ -20,18 +20,18 @@ Feature: Edit capabilities
     And I set the following system permissions of "Teacher" role:
       | capability | permission |
       | block/mnet_hosts:myaddinstance | Allow |
-      | moodle/community:add | Inherit |
+      | moodle/site:messageanyuser | Inherit |
       | moodle/grade:managesharedforms | Prevent |
       | moodle/course:request | Prohibit |
     When I follow "Edit Teacher role"
     Then "block/mnet_hosts:myaddinstance" capability has "Allow" permission
-    And "moodle/community:add" capability has "Not set" permission
+    And "moodle/site:messageanyuser" capability has "Not set" permission
     And "moodle/grade:managesharedforms" capability has "Prevent" permission
     And "moodle/course:request" capability has "Prohibit" permission
 
   Scenario: Course capabilities overrides
     Given I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I navigate to "Users > Permissions" in current page administration
     And I override the system permissions of "Student" role with:
       | mod/forum:deleteanypost | Prohibit |
@@ -45,8 +45,7 @@ Feature: Edit capabilities
 
   Scenario: Module capabilities overrides
     Given I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Forum" to section "1" and I fill the form with:
       | Forum name | I'm the name |
       | Description | I'm the introduction |

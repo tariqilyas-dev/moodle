@@ -7,7 +7,7 @@ $CFG = new stdClass();
 $CFG->dbtype    = 'mysqli';
 $CFG->dblibrary = 'native';
 $CFG->dbhost    = 'localhost';
-$CFG->dbname    = 'moodle1';
+$CFG->dbname    = 'moodle2';
 $CFG->dbuser    = 'root';
 $CFG->dbpass    = 'x47b1a';
 $CFG->prefix    = 'mdl_';
@@ -28,4 +28,3 @@ require_once(__DIR__ . '/lib/setup.php');
 
 // There is no php closing tag in this file,
 // it is intentional because it prevents trailing whitespace problems!
-

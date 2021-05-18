@@ -15,17 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * version.php
+ *
  * @package    theme_klass
  * @copyright  2015 onwards lmsace.
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die;
-$plugin->version   = 2018052800; // This component release level.
+$plugin->version   = 2019012601; // This component release level.
 $plugin->maturity = MATURITY_STABLE; // this version's maturity level.
-$plugin->release = 'v1.4.0.1'; // This version's release version.
-$plugin->requires  = 2016120500; // This version's moodle require release.
+$plugin->release = 'v3.6.2'; // This version's release version.
+$plugin->requires  = 2018120300; // This version's moodle require release.
 $plugin->component = 'theme_klass'; // This component type_name.
 $plugin->dependencies = array(
-    'theme_boost'  => 2016102100, // This version's depended the component and its require release.
+    'theme_boost'  => 2017111300, // This version's depended the component and its require release.
 );

@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * lib.php
+ *
  * @package   theme_klass
  * @copyright 2015 LMSACE Dev Team, lmsace.com
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -23,8 +25,8 @@
 defined('MOODLE_INTERNAL') || die();
 /**
  * Get the pre scss for the theme
- * @param type|string $theme
- * @return type|string $scss.
+ * @param string $theme
+ * @return string $scss.
  */
 function theme_klass_get_pre_scss($theme) {
     global $CFG;
@@ -41,8 +43,9 @@ function theme_klass_get_pre_scss($theme) {
 
 /**
  * Add the custom scss into the theme scss.
- * @param type|string $theme
- * @return type
+ *
+ * @param string $theme
+ * @return string
  */
 function theme_klass_get_extra_scss($theme) {
     return !empty($theme->settings->customcss) ? $theme->settings->customcss : '';
@@ -50,16 +53,17 @@ function theme_klass_get_extra_scss($theme) {
 
 /**
  * Get the main scss content for the theme.
- * @param type|string $theme
- * @return type
+ *
+ * @param string $theme
+ * @return string
  */
 function theme_klass_get_main_scss_content($theme) {
     global $CFG;
     $theme = theme_config::load('boost');
     $scss = theme_boost_get_main_scss_content($theme);
-    $themeScssfile = $CFG->dirroot.'/theme/klass/scss/preset/theme.scss';
-    if ( file_exists($themeScssfile) ) {
-        $scss .= file_get_contents($themeScssfile);
+    $themescssfile = $CFG->dirroot.'/theme/klass/scss/preset/theme.scss';
+    if ( file_exists($themescssfile) ) {
+        $scss .= file_get_contents($themescssfile);
     }
     return $scss;
 }
@@ -68,6 +72,7 @@ function theme_klass_get_main_scss_content($theme) {
  * Load the Jquery and migration files
  * Load the our theme js file
  *
+ * @param  moodle_page $page [description]
  */
 function theme_klass_page_init(moodle_page $page) {
     $page->requires->jquery();
@@ -78,11 +83,10 @@ function theme_klass_page_init(moodle_page $page) {
  * Loads the CSS Styles and replace the background images.
  * If background image not available in the settings take the default images.
  *
- * @param $css
- * @param $theme
+ * @param string $css
+ * @param string $theme
  * @return string
  */
-
 function theme_klass_process_css($css, $theme) {
     // Set the background image for the logo.
     $logo = $theme->setting_file_url('logo', 'logo');
@@ -101,7 +105,7 @@ function theme_klass_process_css($css, $theme) {
 /**
  * Adds the logo to CSS.
  *
- * @param string $css The CSS.
+ * @param string $scss The CSS.
  * @param string $logo The URL of the logo.
  * @return string The parsed CSS
  */
@@ -177,7 +181,13 @@ function theme_klass_serve_css($filename) {
     theme_klass_send_cached_css($thestylepath, $filename, $lastmodified, $etagfile);
 }
 
-// Set browser cache used in php header.
+
+/**
+ * Set browser cache used in php header.
+ *
+ * @param  string $lastmodified
+ * @param  string $etag
+ */
 function theme_klass_send_unmodified($lastmodified, $etag) {
     $lifetime = 60 * 60 * 24 * 60;
     header('HTTP/1.1 304 Not Modified');
@@ -191,11 +201,16 @@ function theme_klass_send_unmodified($lastmodified, $etag) {
     die;
 }
 
-// Cached css.
+/**
+ * Cached css.
+ * @param  string $path
+ * @param  string $filename
+ * @param  int $lastmodified
+ * @param  string $etag
+ */
 function theme_klass_send_cached_css($path, $filename, $lastmodified, $etag) {
     global $CFG;
     require_once($CFG->dirroot . '/lib/configonlylib.php');
-    // For min_enable_zlib_compression().
     // 60 days only - the revision may get incremented quite often.
     $lifetime = 60 * 60 * 24 * 60;
     header('Etag: "' . $etag . '"');
@@ -223,7 +238,6 @@ function theme_klass_send_cached_css($path, $filename, $lastmodified, $etag) {
  */
 function theme_klass_set_customcss($css, $customcss) {
     $tag = '[[setting:customcss]]';
-
     $replacement = $customcss;
     if (is_null($replacement)) {
         $replacement = '';
@@ -267,16 +281,12 @@ function theme_klass_get_html_for_settings(renderer_base $output, moodle_page $p
 /**
  * Loads the CSS Styles and put the font path
  *
- * @param $css
  * @return string
  */
 function theme_klass_set_fontwww() {
     global $CFG, $PAGE;
-    if (empty($CFG->themewww)) {
-        $themewww = $CFG->wwwroot."/theme";
-    } else {
-        $themewww = $CFG->themewww;
-    }
+
+    $themewww = $CFG->wwwroot."/theme";
     $theme = theme_config::load('klass');
     $fontwww = '$fontwww: "'. $themewww.'/klass/fonts/"'.";\n";
     return $fontwww;
@@ -284,28 +294,29 @@ function theme_klass_set_fontwww() {
 
 /**
  * Process the css for font url
- * @param type $css
- * @return type
+ * @param string $css
+ * @return string
  */
 function theme_klass_pre_css_set_fontwww($css) {
     global $CFG, $PAGE;
-    if (empty($CFG->themewww)) {
-        $themewww = $CFG->wwwroot."/theme";
-    } else {
-        $themewww = $CFG->themewww;
-    }
+
+    $themewww = $CFG->wwwroot."/theme";
     $tag = '[[setting:fontwww]]';
     $theme = theme_config::load('klass');
     $css = str_replace($tag, $themewww.'/klass/fonts/', $css);
     return $css;
 }
 
-/**
- * Logo Image URL Fetch from theme settings
- *
- * @return string
- */
+
+// Logo Image URL Fetch from theme settings.
+// @ return string.
 if (!function_exists('get_logo_url')) {
+    /**
+     * get_logo_url description
+     *
+     * @param  string $type
+     * @return image
+     */
     function get_logo_url($type = 'header') {
         global $OUTPUT;
         static $theme;
@@ -314,10 +325,10 @@ if (!function_exists('get_logo_url')) {
         }
         if ($type == "header") {
             $logo = $theme->setting_file_url('logo', 'logo');
-            $logo = empty($logo) ? $OUTPUT->pix_url('home/logo', 'theme') : $logo;
+            $logo = empty($logo) ? $OUTPUT->image_url('home/logo', 'theme') : $logo;
         } else if ($type == "footer") {
             $logo = $theme->setting_file_url('footerlogo', 'footerlogo');
-            $logo = empty($logo) ? $OUTPUT->pix_url('home/footerlogo', 'theme') : $logo;
+            $logo = empty($logo) ? '' : $logo;
         }
         return $logo;
     }
@@ -325,15 +336,16 @@ if (!function_exists('get_logo_url')) {
 
 /**
  * Renderer the slideimg
- * @param type $p
- * @param type $sliname
- * @return type
+ *
+ * @param int $p
+ * @param string $sliname
+ * @return image
  */
 function theme_klass_render_slideimg($p, $sliname) {
     global $PAGE, $OUTPUT;
     $nos = theme_klass_get_setting('numberofslides');
     $i = $p % 3;
-    $slideimage = $OUTPUT->pix_url('home/slide'.$i, 'theme');
+    $slideimage = $OUTPUT->image_url('home/slide'.$i, 'theme');
     // Get slide image or fallback to default.
     if (theme_klass_get_setting($sliname)) {
         $slideimage = $PAGE->theme->setting_file_url($sliname , $sliname);
@@ -341,7 +353,13 @@ function theme_klass_render_slideimg($p, $sliname) {
     return $slideimage;
 }
 
-function theme_klass_get_setting($setting, $format = false) {
+/**
+ * Function to get the theme setting
+ * @param  string $setting
+ * @param  boolean $format
+ * @return string
+ */
+function theme_klass_get_setting($setting, $format = true) {
     global $CFG;
     require_once($CFG->dirroot . '/lib/weblib.php');
     static $theme;
@@ -361,16 +379,18 @@ function theme_klass_get_setting($setting, $format = false) {
     }
 }
 
-/**
- * Return the current theme url
- *
- * @return string
- */
+// Return the current theme url.
+// @ return string.
 if (!function_exists('theme_url')) {
+    /**
+     * theme_url
+     *
+     * @return string
+     */
     function theme_url() {
         global $CFG, $PAGE;
-        $theme_url = $CFG->wwwroot.'/theme/'. $PAGE->theme->name;
-        return $theme_url;
+        $themeurl = $CFG->wwwroot.'/theme/'. $PAGE->theme->name;
+        return $themeurl;
     }
 }
 
@@ -381,22 +401,38 @@ if (!function_exists('theme_url')) {
 function theme_klass_infolink() {
     $infolink = theme_klass_get_setting('infolink');
     $content = "";
-    $info_settings = explode("\n", $infolink);
-    foreach ($info_settings as $key => $settingval) {
-        $exp_set = explode("|", $settingval);
-        if(isset($exp_set[0]) && isset($exp_set[1]) ) {
-            list($ltxt, $lurl) = $exp_set;
+    $infosettings = explode("\n", $infolink);
+    foreach ($infosettings as $key => $settingval) {
+        $expset = explode("|", $settingval);
+        if (isset($expset[0]) && isset($expset[1]) ) {
+            list($ltxt, $lurl) = $expset;
         } else {
-            $ltxt = $exp_set[0];
+            $ltxt = $expset[0];
             $lurl = "#";
         }
         $ltxt = trim($ltxt);
         $lurl = trim($lurl);
 
-        if (empty($ltxt))
+        if (empty($ltxt)) {
             continue;
+        }
         $content .= '<li><a href="'.$lurl.'" target="_blank">'.$ltxt.'</a></li>';
     }
 
     return $content;
+}
+
+function theme_klass_lang($key = '') {
+    $pos = strpos($key, 'lang:');
+    if ($pos !== false) {
+        list($l, $k) = explode(":", $key);
+        if (get_string_manager()->string_exists($k, 'theme_klass')) {
+            $v = get_string($k, 'theme_klass');
+            return $v;
+        } else {
+            return $key;
+        }
+    } else {
+        return $key;
+    }
 }

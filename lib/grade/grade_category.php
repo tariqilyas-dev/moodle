@@ -2309,10 +2309,12 @@ class grade_category extends grade_object {
         // For a course category, we return the course name if the fullname is set to '?' in the DB (empty in the category edit form)
         if (empty($this->parent) && $this->fullname == '?') {
             $course = $DB->get_record('course', array('id'=> $this->courseid));
-            return format_string($course->fullname);
+            return format_string($course->fullname, false, array("context" => context_course::instance($this->courseid)));
 
         } else {
-            return $this->fullname;
+            // Grade categories can't be set up at system context (unlike scales and outcomes)
+            // We therefore must have a courseid, and don't need to handle system contexts when filtering.
+            return format_string($this->fullname, false, array("context" => context_course::instance($this->courseid)));
         }
     }
 
@@ -2587,12 +2589,13 @@ class grade_category extends grade_object {
      */
     public function set_hidden($hidden, $cascade=false) {
         $this->load_grade_item();
-        //this hides the associated grade item (the course total)
-        $this->grade_item->set_hidden($hidden, $cascade);
         //this hides the category itself and everything it contains
         parent::set_hidden($hidden, $cascade);
 
         if ($cascade) {
+
+            // This hides the associated grade item (the course/category total).
+            $this->grade_item->set_hidden($hidden, $cascade);
 
             if ($children = grade_item::fetch_all(array('categoryid'=>$this->id))) {
 
@@ -2617,9 +2620,7 @@ class grade_category extends grade_object {
             if ($category_array && array_key_exists($this->parent, $category_array)) {
                 $category = $category_array[$this->parent];
                 //call set_hidden on the category regardless of whether it is hidden as its parent might be hidden
-                //if($category->is_hidden()) {
-                    $category->set_hidden($hidden, false);
-                //}
+                $category->set_hidden($hidden, false);
             }
         }
     }

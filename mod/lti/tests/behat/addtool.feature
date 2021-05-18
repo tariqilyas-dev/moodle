@@ -15,7 +15,7 @@ Feature: Add tools
       | user | course | role |
       | teacher1 | C1 | editingteacher |
     And I log in as "admin"
-    And I navigate to "Manage tools" node in "Site administration > Plugins > Activity modules > External tool"
+    And I navigate to "Plugins > Activity modules > External tool > Manage tools" in site administration
     And I follow "Manage preconfigured tools"
     And I follow "Add preconfigured tool"
     And I set the following fields to these values:
@@ -28,8 +28,7 @@ Feature: Add tools
   @javascript
   Scenario: Add a tool via the activity picker
     Given I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Teaching Tool 1" to section "1"
     # For tool that does not support Content-Item message type, the Select content button must be disabled.
     And I set the field "Activity name" to "Test tool activity 1"

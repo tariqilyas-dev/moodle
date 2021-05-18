@@ -4,7 +4,7 @@
 // after 4095 selector issue is solved
 
 // TODO: MDL-55142 remove browser hacks in this file:
-/* stylelint-disable declaration-block-no-duplicate-properties, no-browser-hacks */
+/* stylelint-disable declaration-block-no-duplicate-properties */
 
 @media (min-width: (@navbarCollapseDesktopWidth)) {
 
@@ -753,6 +753,11 @@
     }
 }
 
+#page-mod-forum-discuss {
+    select[name="mode"] {
+        margin-bottom: 10px;
+    }
+}
 
 // File Picker.
 @media (max-width: 768px) {

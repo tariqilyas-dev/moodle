@@ -203,9 +203,7 @@ class restore_gradebook_structure_step extends restore_structure_step {
         $data->scaleid   = $this->get_mappingid('scale', $data->scaleid, NULL);
         $data->outcomeid = $this->get_mappingid('outcome', $data->outcomeid, NULL);
 
-        $data->locktime     = $this->apply_date_offset($data->locktime);
-        $data->timecreated  = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
+        $data->locktime = $this->apply_date_offset($data->locktime);
 
         $coursecategory = $newitemid = null;
         //course grade item should already exist so updating instead of inserting
@@ -264,10 +262,6 @@ class restore_gradebook_structure_step extends restore_structure_step {
         if (!empty($data->userid)) {
             $data->usermodified = $this->get_mappingid('user', $data->usermodified, null);
             $data->locktime     = $this->apply_date_offset($data->locktime);
-            // TODO: Ask, all the rest of locktime/exported... work with time... to be rolled?
-            $data->overridden = $this->apply_date_offset($data->overridden);
-            $data->timecreated  = $this->apply_date_offset($data->timecreated);
-            $data->timemodified = $this->apply_date_offset($data->timemodified);
 
             $gradeexists = $DB->record_exists('grade_grades', array('userid' => $data->userid, 'itemid' => $data->itemid));
             if ($gradeexists) {
@@ -291,9 +285,6 @@ class restore_gradebook_structure_step extends restore_structure_step {
 
         $data->course = $this->get_courseid();
         $data->courseid = $data->course;
-
-        $data->timecreated  = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = null;
         //no parent means a course level grade category. That may have been created when the course was created
@@ -493,6 +484,9 @@ class restore_gradebook_structure_step extends restore_structure_step {
 
         // Freeze gradebook calculations if needed.
         $this->gradebook_calculation_freeze();
+
+        // Ensure the module cache is current when recalculating grades.
+        rebuild_course_cache($this->get_courseid(), true);
 
         // Restore marks items as needing update. Update everything now.
         grade_regrade_final_grades($this->get_courseid());
@@ -795,7 +789,8 @@ class restore_rebuild_course_cache extends restore_execution_step {
             if (!$DB->record_exists('course_sections', array('course' => $this->get_courseid(), 'section' => $i))) {
                 $sectionrec = array(
                     'course' => $this->get_courseid(),
-                    'section' => $i);
+                    'section' => $i,
+                    'timemodified' => time());
                 $DB->insert_record('course_sections', $sectionrec); // missing section created
             }
         }
@@ -989,8 +984,8 @@ class restore_process_course_modules_availability extends restore_execution_step
                 $DB->set_field('course_' . $table . 's', 'availability', $newvalue,
                         array('id' => $thingid));
             }
+            $rs->close();
         }
-        $rs->close();
     }
 }
 
@@ -1575,8 +1570,9 @@ class restore_section_structure_step extends restore_structure_step {
         $section = new stdclass();
         $section->course  = $this->get_courseid();
         $section->section = $data->number;
+        $section->timemodified = $data->timemodified ?? 0;
         // Section doesn't exist, create it with all the info from backup
-        if (!$secrec = $DB->get_record('course_sections', (array)$section)) {
+        if (!$secrec = $DB->get_record('course_sections', ['course' => $this->get_courseid(), 'section' => $data->number])) {
             $section->name = $data->name;
             $section->summary = $data->summary;
             $section->summaryformat = $data->summaryformat;
@@ -1593,6 +1589,10 @@ class restore_section_structure_step extends restore_structure_step {
                 }
             }
             $newitemid = $DB->insert_record('course_sections', $section);
+            $section->id = $newitemid;
+
+            core\event\course_section_created::create_from_section($section)->trigger();
+
             $restorefiles = true;
 
         // Section exists, update non-empty information
@@ -1612,6 +1612,17 @@ class restore_section_structure_step extends restore_structure_step {
 
             $DB->update_record('course_sections', $section);
             $newitemid = $secrec->id;
+
+            // Trigger an event for course section update.
+            $event = \core\event\course_section_updated::create(
+                array(
+                    'objectid' => $section->id,
+                    'courseid' => $section->course,
+                    'context' => context_course::instance($section->course),
+                    'other' => array('sectionnum' => $section->section)
+                )
+            );
+            $event->trigger();
         }
 
         // Annotate the section mapping, with restorefiles option if needed
@@ -1706,8 +1717,12 @@ class restore_section_structure_step extends restore_structure_step {
                     array('id' => $availfield->coursesectionid), MUST_EXIST);
             $newvalue = \core_availability\info::add_legacy_availability_field_condition(
                     $currentvalue, $availfield, $show);
-            $DB->set_field('course_sections', 'availability', $newvalue,
-                    array('id' => $availfield->coursesectionid));
+
+            $section = new stdClass();
+            $section->id = $availfield->coursesectionid;
+            $section->availability = $newvalue;
+            $section->timemodified = time();
+            $DB->update_record('course_sections', $section);
         }
     }
 
@@ -1810,39 +1825,39 @@ class restore_course_structure_step extends restore_structure_step {
         $context = context::instance_by_id($this->task->get_contextid());
         $userid = $this->task->get_userid();
         $target = $this->get_task()->get_target();
-        $isnewcourse = $target != backup::TARGET_CURRENT_ADDING && $target != backup::TARGET_EXISTING_ADDING;
+        $isnewcourse = $target == backup::TARGET_NEW_COURSE;
 
         // When restoring to a new course we can set all the things except for the ID number.
         $canchangeidnumber = $isnewcourse || has_capability('moodle/course:changeidnumber', $context, $userid);
-        $canchangeshortname = $isnewcourse || has_capability('moodle/course:changeshortname', $context, $userid);
-        $canchangefullname = $isnewcourse || has_capability('moodle/course:changefullname', $context, $userid);
         $canchangesummary = $isnewcourse || has_capability('moodle/course:changesummary', $context, $userid);
+        $canforcelanguage = has_capability('moodle/course:setforcedlanguage', $context, $userid);
 
         $data = (object)$data;
         $data->id = $this->get_courseid();
 
+        // Calculate final course names, to avoid dupes.
         $fullname  = $this->get_setting_value('course_fullname');
         $shortname = $this->get_setting_value('course_shortname');
-        $startdate = $this->get_setting_value('course_startdate');
-
-        // Calculate final course names, to avoid dupes.
-        list($fullname, $shortname) = restore_dbops::calculate_course_names($this->get_courseid(), $fullname, $shortname);
-
-        if ($canchangefullname) {
-            $data->fullname = $fullname;
-        } else {
+        list($data->fullname, $data->shortname) = restore_dbops::calculate_course_names($this->get_courseid(),
+            $fullname === false ? $data->fullname : $fullname,
+            $shortname === false ? $data->shortname : $shortname);
+        // Do not modify the course names at all when merging and user selected to keep the names (or prohibited by cap).
+        if (!$isnewcourse && $fullname === false) {
             unset($data->fullname);
         }
-
-        if ($canchangeshortname) {
-            $data->shortname = $shortname;
-        } else {
+        if (!$isnewcourse && $shortname === false) {
             unset($data->shortname);
         }
 
+        // Unset summary if user can't change it.
         if (!$canchangesummary) {
             unset($data->summary);
             unset($data->summaryformat);
+        }
+
+        // Unset lang if user can't change it.
+        if (!$canforcelanguage) {
+            unset($data->lang);
         }
 
         // Only allow the idnumber to be set if the user has permission and the idnumber is not already in use by
@@ -1883,7 +1898,7 @@ class restore_course_structure_step extends restore_structure_step {
             $data->completionnotify = 0;
         }
         $languages = get_string_manager()->get_list_of_translations(); // Get languages for quick search
-        if (!array_key_exists($data->lang, $languages)) {
+        if (isset($data->lang) && !array_key_exists($data->lang, $languages)) {
             $data->lang = '';
         }
 
@@ -1954,6 +1969,12 @@ class restore_course_structure_step extends restore_structure_step {
                 }
 
                 $capability = 'mod/' . $modname . ':addinstance';
+
+                if (!get_capability_info($capability)) {
+                    $this->log("Capability '{$capability}' was not found!", backup::LOG_WARNING);
+                    continue;
+                }
+
                 foreach ($roleids as $roleid) {
                     assign_capability($capability, CAP_PREVENT, $roleid, $context);
                 }
@@ -2081,9 +2102,12 @@ class restore_ras_and_caps_structure_step extends restore_structure_step {
         $newroleid = $this->get_mappingid('role', $data->roleid);
         // If newroleid and context are valid assign it via API (it handles dupes and so on)
         if ($newroleid && $this->task->get_contextid()) {
-            // TODO: assign_capability() needs one userid param to be able to specify our restore userid
-            // TODO: it seems that assign_capability() doesn't check for valid capabilities at all ???
-            assign_capability($data->capability, $data->permission, $newroleid, $this->task->get_contextid());
+            if (!get_capability_info($data->capability)) {
+                $this->log("Capability '{$data->capability}' was not found!", backup::LOG_WARNING);
+            } else {
+                // TODO: assign_capability() needs one userid param to be able to specify our restore userid.
+                assign_capability($data->capability, $data->permission, $newroleid, $this->task->get_contextid());
+            }
         }
     }
 }
@@ -2154,12 +2178,17 @@ class restore_enrolments_structure_step extends restore_structure_step {
 
     protected function define_structure() {
 
-        $enrol = new restore_path_element('enrol', '/enrolments/enrols/enrol');
-        $enrolment = new restore_path_element('enrolment', '/enrolments/enrols/enrol/user_enrolments/enrolment');
+        $userinfo = $this->get_setting_value('users');
+
+        $paths = [];
+        $paths[] = $enrol = new restore_path_element('enrol', '/enrolments/enrols/enrol');
+        if ($userinfo) {
+            $paths[] = new restore_path_element('enrolment', '/enrolments/enrols/enrol/user_enrolments/enrolment');
+        }
         // Attach local plugin stucture to enrol element.
         $this->add_plugin_structure('enrol', $enrol);
 
-        return array($enrol, $enrolment);
+        return $paths;
     }
 
     /**
@@ -2203,7 +2232,14 @@ class restore_enrolments_structure_step extends restore_structure_step {
         $data->roleid   = $this->get_mappingid('role', $data->roleid);
         $data->courseid = $courserec->id;
 
-        if ($this->get_setting_value('enrol_migratetomanual')) {
+        if (!$this->get_setting_value('users') && $this->get_setting_value('enrolments') == backup::ENROL_WITHUSERS) {
+            $converttomanual = true;
+        } else {
+            $converttomanual = ($this->get_setting_value('enrolments') == backup::ENROL_NEVER);
+        }
+
+        if ($converttomanual) {
+            // Restore enrolments as manual enrolments.
             unset($data->sortorder); // Remove useless sortorder from <2.4 backups.
             if (!enrol_is_enabled('manual')) {
                 $this->set_mapping('enrol', $oldid, 0);
@@ -2224,7 +2260,7 @@ class restore_enrolments_structure_step extends restore_structure_step {
         } else {
             if (!enrol_is_enabled($data->enrol) or !isset($this->plugins[$data->enrol])) {
                 $this->set_mapping('enrol', $oldid, 0);
-                $message = "Enrol plugin '$data->enrol' data can not be restored because it is not enabled, use migration to manual enrolments";
+                $message = "Enrol plugin '$data->enrol' data can not be restored because it is not enabled, consider restoring without enrolment methods";
                 $this->log($message, backup::LOG_WARNING);
                 return;
             }
@@ -2479,6 +2515,9 @@ class restore_badges_structure_step extends restore_structure_step {
         $paths[] = new restore_path_element('badge', '/badges/badge');
         $paths[] = new restore_path_element('criterion', '/badges/badge/criteria/criterion');
         $paths[] = new restore_path_element('parameter', '/badges/badge/criteria/criterion/parameters/parameter');
+        $paths[] = new restore_path_element('endorsement', '/badges/badge/endorsement');
+        $paths[] = new restore_path_element('alignment', '/badges/badge/alignments/alignment');
+        $paths[] = new restore_path_element('relatedbadge', '/badges/badge/relatedbadges/relatedbadge');
         $paths[] = new restore_path_element('manual_award', '/badges/badge/manual_awards/manual_award');
 
         return $paths;
@@ -2507,8 +2546,8 @@ class restore_badges_structure_step extends restore_structure_step {
         $params = array(
                 'name'           => $data->name,
                 'description'    => $data->description,
-                'timecreated'    => $this->apply_date_offset($data->timecreated),
-                'timemodified'   => $this->apply_date_offset($data->timemodified),
+                'timecreated'    => $data->timecreated,
+                'timemodified'   => $data->timemodified,
                 'usercreated'    => $data->usercreated,
                 'usermodified'   => $data->usermodified,
                 'issuername'     => $data->issuername,
@@ -2523,11 +2562,85 @@ class restore_badges_structure_step extends restore_structure_step {
                 'attachment'     => $data->attachment,
                 'notification'   => $data->notification,
                 'status'         => BADGE_STATUS_INACTIVE,
-                'nextcron'       => $this->apply_date_offset($data->nextcron)
+                'nextcron'       => $data->nextcron,
+                'version'        => $data->version,
+                'language'       => $data->language,
+                'imageauthorname' => $data->imageauthorname,
+                'imageauthoremail' => $data->imageauthoremail,
+                'imageauthorurl' => $data->imageauthorurl,
+                'imagecaption'   => $data->imagecaption
         );
 
         $newid = $DB->insert_record('badge', $params);
         $this->set_mapping('badge', $data->id, $newid, $restorefiles);
+    }
+
+    /**
+     * Create an endorsement for a badge.
+     *
+     * @param mixed $data
+     * @return void
+     */
+    public function process_endorsement($data) {
+        global $DB;
+
+        $data = (object)$data;
+
+        $params = array(
+                'badgeid'           => $this->get_new_parentid('badge'),
+                'issuername'        => $data->issuername,
+                'issuerurl'         => $data->issuerurl,
+                'issueremail'       => $data->issueremail,
+                'claimid'           => $data->claimid,
+                'claimcomment'      => $data->claimcomment,
+                'dateissued'        => $this->apply_date_offset($data->dateissued)
+        );
+        $newid = $DB->insert_record('badge_endorsement', $params);
+        $this->set_mapping('endorsement', $data->id, $newid);
+    }
+
+    /**
+     * Link to related badges for a badge. This relies on post processing in after_execute().
+     *
+     * @param mixed $data
+     * @return void
+     */
+    public function process_relatedbadge($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $relatedbadgeid = $data->relatedbadgeid;
+
+        if ($relatedbadgeid) {
+            // Only backup and restore related badges if they are contained in the backup file.
+            $params = array(
+                    'badgeid'           => $this->get_new_parentid('badge'),
+                    'relatedbadgeid'    => $relatedbadgeid
+            );
+            $newid = $DB->insert_record('badge_related', $params);
+        }
+    }
+
+    /**
+     * Link to an alignment for a badge.
+     *
+     * @param mixed $data
+     * @return void
+     */
+    public function process_alignment($data) {
+        global $DB;
+
+        $data = (object)$data;
+        $params = array(
+                'badgeid'           => $this->get_new_parentid('badge'),
+                'targetname'        => $data->targetname,
+                'targeturl'         => $data->targeturl,
+                'targetdescription' => $data->targetdescription,
+                'targetframework'   => $data->targetframework,
+                'targetcode'        => $data->targetcode
+        );
+        $newid = $DB->insert_record('badge_competencies', $params);
+        $this->set_mapping('alignment', $data->id, $newid);
     }
 
     public function process_criterion($data) {
@@ -2542,6 +2655,7 @@ class restore_badges_structure_step extends restore_structure_step {
                 'description'       => isset($data->description) ? $data->description : '',
                 'descriptionformat' => isset($data->descriptionformat) ? $data->descriptionformat : 0,
         );
+
         $newid = $DB->insert_record('badge_criteria', $params);
         $this->set_mapping('criterion', $data->id, $newid);
     }
@@ -2607,8 +2721,38 @@ class restore_badges_structure_step extends restore_structure_step {
     }
 
     protected function after_execute() {
+        global $DB;
         // Add related files.
         $this->add_related_files('badges', 'badgeimage', 'badge');
+
+        $badgeid = $this->get_new_parentid('badge');
+        // Remap any related badges.
+        // We do this in the DB directly because this is backup/restore it is not valid to call into
+        // the component API.
+        $params = array('badgeid' => $badgeid);
+        $query = "SELECT DISTINCT br.id, br.badgeid, br.relatedbadgeid
+                    FROM {badge_related} br
+                   WHERE (br.badgeid = :badgeid)";
+        $relatedbadges = $DB->get_records_sql($query, $params);
+        $newrelatedids = [];
+        foreach ($relatedbadges as $relatedbadge) {
+            $relatedid = $this->get_mappingid('badge', $relatedbadge->relatedbadgeid);
+            $params['relatedbadgeid'] = $relatedbadge->relatedbadgeid;
+            $DB->delete_records_select('badge_related', '(badgeid = :badgeid AND relatedbadgeid = :relatedbadgeid)', $params);
+            if ($relatedid) {
+                $newrelatedids[] = $relatedid;
+            }
+        }
+        if (!empty($newrelatedids)) {
+            $relatedbadges = [];
+            foreach ($newrelatedids as $relatedid) {
+                $relatedbadge = new stdClass();
+                $relatedbadge->badgeid = $badgeid;
+                $relatedbadge->relatedbadgeid = $relatedid;
+                $relatedbadges[] = $relatedbadge;
+            }
+            $DB->insert_records('badge_related', $relatedbadges);
+        }
     }
 }
 
@@ -2632,6 +2776,13 @@ class restore_calendarevents_structure_step extends restore_structure_step {
         $data = (object)$data;
         $oldid = $data->id;
         $restorefiles = true; // We'll restore the files
+
+        // If this is a new action event, it will automatically be populated by the adhoc task.
+        // Nothing to do here.
+        if (isset($data->type) && $data->type == CALENDAR_EVENT_TYPE_ACTION) {
+            return;
+        }
+
         // User overrides for activities are identified by having a courseid of zero with
         // both a modulename and instance value set.
         $isuseroverride = !$data->courseid && $data->modulename && $data->instance;
@@ -2685,13 +2836,17 @@ class restore_calendarevents_structure_step extends restore_structure_step {
                 'userid'         => $data->userid,
                 'repeatid'       => $this->get_mappingid('event', $data->repeatid),
                 'modulename'     => $data->modulename,
+                'type'           => isset($data->type) ? $data->type : 0,
                 'eventtype'      => $data->eventtype,
                 'timestart'      => $this->apply_date_offset($data->timestart),
                 'timeduration'   => $data->timeduration,
+                'timesort'       => isset($data->timesort) ? $this->apply_date_offset($data->timesort) : null,
                 'visible'        => $data->visible,
                 'uuid'           => $data->uuid,
                 'sequence'       => $data->sequence,
-                'timemodified'    => $this->apply_date_offset($data->timemodified));
+                'timemodified'   => $data->timemodified,
+                'priority'       => isset($data->priority) ? $data->priority : null,
+                'location'       => isset($data->location) ? $data->location : null);
         if ($this->name == 'activity_calendar') {
             $params['instance'] = $this->task->get_activityid();
         } else {
@@ -2922,7 +3077,7 @@ class restore_course_completion_structure_step extends restore_structure_step {
                 'userid' => $data->userid,
                 'course' => $data->course,
                 'criteriaid' => $data->criteriaid,
-                'timecompleted' => $this->apply_date_offset($data->timecompleted)
+                'timecompleted' => $data->timecompleted
             );
             if (isset($data->gradefinal)) {
                 $params['gradefinal'] = $data->gradefinal;
@@ -2952,9 +3107,9 @@ class restore_course_completion_structure_step extends restore_structure_step {
             $params = array(
                 'userid' => $data->userid,
                 'course' => $data->course,
-                'timeenrolled' => $this->apply_date_offset($data->timeenrolled),
-                'timestarted' => $this->apply_date_offset($data->timestarted),
-                'timecompleted' => $this->apply_date_offset($data->timecompleted),
+                'timeenrolled' => $data->timeenrolled,
+                'timestarted' => $data->timestarted,
+                'timecompleted' => $data->timecompleted,
                 'reaggregate' => $data->reaggregate
             );
 
@@ -3282,14 +3437,14 @@ class restore_course_competencies_structure_step extends restore_structure_step 
             return;
         }
         $competency = \core_competency\competency::get_record(array('idnumber' => $data->idnumber,
-            'competencyframeworkid' => $framework->get_id()));
+            'competencyframeworkid' => $framework->get('id')));
         if (!$competency) {
             return;
         }
-        $this->set_mapping(\core_competency\competency::TABLE, $data->id, $competency->get_id());
+        $this->set_mapping(\core_competency\competency::TABLE, $data->id, $competency->get('id'));
 
         $params = array(
-            'competencyid' => $competency->get_id(),
+            'competencyid' => $competency->get('id'),
             'courseid' => $this->task->get_courseid()
         );
         $query = 'competencyid = :competencyid AND courseid = :courseid';
@@ -3393,13 +3548,13 @@ class restore_activity_competencies_structure_step extends restore_structure_ste
             return;
         }
         $competency = \core_competency\competency::get_record(array('idnumber' => $data->idnumber,
-            'competencyframeworkid' => $framework->get_id()));
+            'competencyframeworkid' => $framework->get('id')));
         if (!$competency) {
             return;
         }
 
         $params = array(
-            'competencyid' => $competency->get_id(),
+            'competencyid' => $competency->get('id'),
             'cmid' => $this->task->get_moduleid()
         );
         $query = 'competencyid = :competencyid AND cmid = :cmid';
@@ -3656,8 +3811,6 @@ class restore_activity_grades_structure_step extends restore_structure_step {
         $data->idnumber     = $idnumber;
         $data->scaleid      = $this->get_mappingid('scale', $data->scaleid);
         $data->outcomeid    = $this->get_mappingid('outcome', $data->outcomeid);
-        $data->timecreated  = $this->apply_date_offset($data->timecreated);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $gradeitem = new grade_item($data, false);
         $gradeitem->insert('restore');
@@ -3672,6 +3825,10 @@ class restore_activity_grades_structure_step extends restore_structure_step {
     }
 
     protected function process_grade_grade($data) {
+        global $CFG;
+
+        require_once($CFG->libdir . '/grade/constants.php');
+
         $data = (object)($data);
         $olduserid = $data->userid;
         $oldid = $data->id;
@@ -3683,12 +3840,19 @@ class restore_activity_grades_structure_step extends restore_structure_step {
         if (!empty($data->userid)) {
             $data->usermodified = $this->get_mappingid('user', $data->usermodified, null);
             $data->rawscaleid = $this->get_mappingid('scale', $data->rawscaleid);
-            // TODO: Ask, all the rest of locktime/exported... work with time... to be rolled?
-            $data->overridden = $this->apply_date_offset($data->overridden);
 
             $grade = new grade_grade($data, false);
             $grade->insert('restore');
-            $this->set_mapping('grade_grades', $oldid, $grade->id);
+
+            $this->set_mapping('grade_grades', $oldid, $grade->id, true);
+
+            $this->add_related_files(
+                GRADE_FILE_COMPONENT,
+                GRADE_FEEDBACK_FILEAREA,
+                'grade_grades',
+                null,
+                $oldid
+            );
         } else {
             debugging("Mapped user id not found for user id '{$olduserid}', grade item id '{$data->itemid}'");
         }
@@ -3763,9 +3927,12 @@ class restore_activity_grade_history_structure_step extends restore_structure_st
     }
 
     protected function process_grade_grade($data) {
-        global $DB;
+        global $CFG, $DB;
+
+        require_once($CFG->libdir . '/grade/constants.php');
 
         $data = (object) $data;
+        $oldhistoryid = $data->id;
         $olduserid = $data->userid;
         unset($data->id);
 
@@ -3776,13 +3943,23 @@ class restore_activity_grade_history_structure_step extends restore_structure_st
             $data->oldid = $this->get_mappingid('grade_grades', $data->oldid);
             $data->usermodified = $this->get_mappingid('user', $data->usermodified, null);
             $data->rawscaleid = $this->get_mappingid('scale', $data->rawscaleid);
-            $DB->insert_record('grade_grades_history', $data);
+
+            $newhistoryid = $DB->insert_record('grade_grades_history', $data);
+
+            $this->set_mapping('grade_grades_history', $oldhistoryid, $newhistoryid, true);
+
+            $this->add_related_files(
+                GRADE_FILE_COMPONENT,
+                GRADE_HISTORY_FEEDBACK_FILEAREA,
+                'grade_grades_history',
+                null,
+                $oldhistoryid
+            );
         } else {
             $message = "Mapped user id not found for user id '{$olduserid}', grade item id '{$data->itemid}'";
             $this->log($message, backup::LOG_DEBUG);
         }
     }
-
 }
 
 /**
@@ -3907,6 +4084,14 @@ class restore_block_instance_structure_step extends restore_structure_step {
             $data->configdata = base64_encode(serialize((object)$configdata));
         }
 
+        // Set timecreated, timemodified if not included (older backup).
+        if (empty($data->timecreated)) {
+            $data->timecreated = time();
+        }
+        if (empty($data->timemodified)) {
+            $data->timemodified = $data->timecreated;
+        }
+
         // Create the block instance
         $newitemid = $DB->insert_record('block_instances', $data);
         // Save the mapping (with restorefiles support)
@@ -4010,11 +4195,13 @@ class restore_module_structure_step extends restore_structure_step {
         if (!$data->section) { // no sections in course, create section 0 and 1 and assign module to 1
             $sectionrec = array(
                 'course' => $this->get_courseid(),
-                'section' => 0);
+                'section' => 0,
+                'timemodified' => time());
             $DB->insert_record('course_sections', $sectionrec); // section 0
             $sectionrec = array(
                 'course' => $this->get_courseid(),
-                'section' => 1);
+                'section' => 1,
+                'timemodified' => time());
             $data->section = $DB->insert_record('course_sections', $sectionrec); // section 1
         }
         $data->groupingid= $this->get_mappingid('grouping', $data->groupingid);      // grouping
@@ -4068,7 +4255,12 @@ class restore_module_structure_step extends restore_structure_step {
         } else {
             $sequence = $newitemid;
         }
-        $DB->set_field('course_sections', 'sequence', $sequence, array('id' => $data->section));
+
+        $updatesection = new \stdClass();
+        $updatesection->id = $data->section;
+        $updatesection->sequence = $sequence;
+        $updatesection->timemodified = time();
+        $DB->update_record('course_sections', $updatesection);
 
         // If there is the legacy showavailability data, store this for later use.
         // (This data is not present when restoring 'new' backups.)
@@ -4236,7 +4428,6 @@ class restore_userscompletion_structure_step extends restore_structure_step {
 
         $data->coursemoduleid = $this->task->get_moduleid();
         $data->userid = $this->get_mappingid('user', $data->userid);
-        $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         // Find the existing record
         $existing = $DB->get_record('course_modules_completion', array(
@@ -4344,6 +4535,9 @@ class restore_create_categories_and_questions extends restore_structure_step {
 
         // Check we have to create the category (newitemid = 0)
         if ($mapping->newitemid) {
+            // By performing this set_mapping() we make get_old/new_parentid() to work for all the
+            // children elements of the 'question_category' one.
+            $this->set_mapping('question_category', $oldid, $mapping->newitemid);
             return; // newitemid != 0, this category is going to be mapped. Nothing to do
         }
 
@@ -4356,20 +4550,49 @@ class restore_create_categories_and_questions extends restore_structure_step {
         }
         $data->contextid = $mapping->parentitemid;
 
-        // Before 3.1, the 'stamp' field could be erroneously duplicated.
-        // From 3.1 onwards, there's a unique index of (contextid, stamp).
-        // If we encounter a duplicate in an old restore file, just generate a new stamp.
-        // This is the same as what happens during an upgrade to 3.1+ anyway.
-        if ($DB->record_exists('question_categories', ['stamp' => $data->stamp, 'contextid' => $data->contextid])) {
-            $data->stamp = make_unique_id_code();
+        // Before 3.5, question categories could be created at top level.
+        // From 3.5 onwards, all question categories should be a child of a special category called the "top" category.
+        $backuprelease = floatval($this->get_task()->get_info()->backup_release);
+        preg_match('/(\d{8})/', $this->get_task()->get_info()->moodle_release, $matches);
+        $backupbuild = (int)$matches[1];
+        $before35 = false;
+        if ($backuprelease < 3.5 || $backupbuild < 20180205) {
+            $before35 = true;
+        }
+        if (empty($mapping->info->parent) && $before35) {
+            $top = question_get_top_category($data->contextid, true);
+            $data->parent = $top->id;
         }
 
-        // Let's create the question_category and save mapping
-        $newitemid = $DB->insert_record('question_categories', $data);
-        $this->set_mapping('question_category', $oldid, $newitemid);
-        // Also annotate them as question_category_created, we need
-        // that later when remapping parents
-        $this->set_mapping('question_category_created', $oldid, $newitemid, false, null, $data->contextid);
+        if (empty($data->parent)) {
+            if (!$top = question_get_top_category($data->contextid)) {
+                $top = question_get_top_category($data->contextid, true);
+                $this->set_mapping('question_category_created', $oldid, $top->id, false, null, $data->contextid);
+            }
+            $this->set_mapping('question_category', $oldid, $top->id);
+        } else {
+
+            // Before 3.1, the 'stamp' field could be erroneously duplicated.
+            // From 3.1 onwards, there's a unique index of (contextid, stamp).
+            // If we encounter a duplicate in an old restore file, just generate a new stamp.
+            // This is the same as what happens during an upgrade to 3.1+ anyway.
+            if ($DB->record_exists('question_categories', ['stamp' => $data->stamp, 'contextid' => $data->contextid])) {
+                $data->stamp = make_unique_id_code();
+            }
+
+            // The idnumber if it exists also needs to be unique within a context or reset it to null.
+            if (!empty($data->idnumber) && $DB->record_exists('question_categories',
+                    ['idnumber' => $data->idnumber, 'contextid' => $data->contextid])) {
+                unset($data->idnumber);
+            }
+
+            // Let's create the question_category and save mapping.
+            $newitemid = $DB->insert_record('question_categories', $data);
+            $this->set_mapping('question_category', $oldid, $newitemid);
+            // Also annotate them as question_category_created, we need
+            // that later when remapping parents.
+            $this->set_mapping('question_category_created', $oldid, $newitemid, false, null, $data->contextid);
+        }
     }
 
     protected function process_question($data) {
@@ -4408,6 +4631,19 @@ class restore_create_categories_and_questions extends restore_structure_step {
 
         // With newitemid = 0, let's create the question
         if (!$questionmapping->newitemid) {
+
+            // The idnumber if it exists also needs to be unique within a category or reset it to null.
+            if (!empty($data->idnumber) && $DB->record_exists('question',
+                    ['idnumber' => $data->idnumber, 'category' => $data->category])) {
+                unset($data->idnumber);
+            }
+
+            if ($data->qtype === 'random') {
+                // Ensure that this newly created question is considered by
+                // \qtype_random\task\remove_unused_questions.
+                $data->hidden = 0;
+            }
+
             $newitemid = $DB->insert_record('question', $data);
             $this->set_mapping('question', $oldid, $newitemid);
             // Also annotate them as question_created, we need
@@ -4484,7 +4720,7 @@ class restore_create_categories_and_questions extends restore_structure_step {
     }
 
     protected function process_tag($data) {
-        global $CFG, $DB;
+        global $DB;
 
         $data = (object)$data;
         $newquestion = $this->get_new_parentid('question');
@@ -4496,14 +4732,19 @@ class restore_create_categories_and_questions extends restore_structure_step {
 
         if (core_tag_tag::is_enabled('core_question', 'question')) {
             $tagname = $data->rawname;
-            // Get the category, so we can then later get the context.
-            $categoryid = $this->get_new_parentid('question_category');
-            if (empty($this->cachedcategory) || $this->cachedcategory->id != $categoryid) {
-                $this->cachedcategory = $DB->get_record('question_categories', array('id' => $categoryid));
+            if (!empty($data->contextid) && $newcontextid = $this->get_mappingid('context', $data->contextid)) {
+                    $tagcontextid = $newcontextid;
+            } else {
+                // Get the category, so we can then later get the context.
+                $categoryid = $this->get_new_parentid('question_category');
+                if (empty($this->cachedcategory) || $this->cachedcategory->id != $categoryid) {
+                    $this->cachedcategory = $DB->get_record('question_categories', array('id' => $categoryid));
+                }
+                $tagcontextid = $this->cachedcategory->contextid;
             }
             // Add the tag to the question.
             core_tag_tag::add_item_tag('core_question', 'question', $newquestion,
-                    context::instance_by_id($this->cachedcategory->contextid),
+                    context::instance_by_id($tagcontextid),
                     $tagname);
         }
     }
@@ -4516,7 +4757,6 @@ class restore_create_categories_and_questions extends restore_structure_step {
                      'backupid' => $this->get_restoreid(),
                      'itemname' => 'question_category_created'));
         foreach ($qcats as $qcat) {
-            $newparent = 0;
             $dbcat = $DB->get_record('question_categories', array('id' => $qcat->newitemid));
             // Get new parent (mapped or created, so we look in quesiton_category mappings)
             if ($newparent = $DB->get_field('backup_ids_temp', 'newitemid', array(
@@ -4532,8 +4772,11 @@ class restore_create_categories_and_questions extends restore_structure_step {
                 }
             }
             // Here with $newparent empty, problem with contexts or remapping, set it to top cat
-            if (!$newparent) {
-                $DB->set_field('question_categories', 'parent', 0, array('id' => $dbcat->id));
+            if (!$newparent && $dbcat->parent) {
+                $topcat = question_get_top_category($dbcat->contextid, true);
+                if ($dbcat->parent != $topcat->id) {
+                    $DB->set_field('question_categories', 'parent', $topcat->id, array('id' => $dbcat->id));
+                }
             }
         }
 
@@ -4542,7 +4785,6 @@ class restore_create_categories_and_questions extends restore_structure_step {
                   'backupid' => $this->get_restoreid(),
                   'itemname' => 'question_created'));
         foreach ($qs as $q) {
-            $newparent = 0;
             $dbq = $DB->get_record('question', array('id' => $q->newitemid));
             // Get new parent (mapped or created, so we look in question mappings)
             if ($newparent = $DB->get_field('backup_ids_temp', 'newitemid', array(
@@ -4571,21 +4813,54 @@ class restore_move_module_questions_categories extends restore_execution_step {
     protected function define_execution() {
         global $DB;
 
+        $backuprelease = floatval($this->task->get_info()->backup_release);
+        preg_match('/(\d{8})/', $this->task->get_info()->moodle_release, $matches);
+        $backupbuild = (int)$matches[1];
+        $after35 = false;
+        if ($backuprelease >= 3.5 && $backupbuild > 20180205) {
+            $after35 = true;
+        }
+
         $contexts = restore_dbops::restore_get_question_banks($this->get_restoreid(), CONTEXT_MODULE);
         foreach ($contexts as $contextid => $contextlevel) {
             // Only if context mapping exists (i.e. the module has been restored)
             if ($newcontext = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'context', $contextid)) {
                 // Update all the qcats having their parentitemid set to the original contextid
-                $modulecats = $DB->get_records_sql("SELECT itemid, newitemid
+                $modulecats = $DB->get_records_sql("SELECT itemid, newitemid, info
                                                       FROM {backup_ids_temp}
                                                      WHERE backupid = ?
                                                        AND itemname = 'question_category'
                                                        AND parentitemid = ?", array($this->get_restoreid(), $contextid));
+                $top = question_get_top_category($newcontext->newitemid, true);
+                $oldtopid = 0;
                 foreach ($modulecats as $modulecat) {
-                    $DB->set_field('question_categories', 'contextid', $newcontext->newitemid, array('id' => $modulecat->newitemid));
-                    // And set new contextid also in question_category mapping (will be
-                    // used by {@link restore_create_question_files} later
-                    restore_dbops::set_backup_ids_record($this->get_restoreid(), 'question_category', $modulecat->itemid, $modulecat->newitemid, $newcontext->newitemid);
+                    // Before 3.5, question categories could be created at top level.
+                    // From 3.5 onwards, all question categories should be a child of a special category called the "top" category.
+                    $info = backup_controller_dbops::decode_backup_temp_info($modulecat->info);
+                    if ($after35 && empty($info->parent)) {
+                        $oldtopid = $modulecat->newitemid;
+                        $modulecat->newitemid = $top->id;
+                    } else {
+                        $cat = new stdClass();
+                        $cat->id = $modulecat->newitemid;
+                        $cat->contextid = $newcontext->newitemid;
+                        if (empty($info->parent)) {
+                            $cat->parent = $top->id;
+                        }
+                        $DB->update_record('question_categories', $cat);
+                    }
+
+                    // And set new contextid (and maybe update newitemid) also in question_category mapping (will be
+                    // used by {@link restore_create_question_files} later.
+                    restore_dbops::set_backup_ids_record($this->get_restoreid(), 'question_category', $modulecat->itemid,
+                            $modulecat->newitemid, $newcontext->newitemid);
+                }
+
+                // Now set the parent id for the question categories that were in the top category in the course context
+                // and have been moved now.
+                if ($oldtopid) {
+                    $DB->set_field('question_categories', 'parent', $top->id,
+                            array('contextid' => $newcontext->newitemid, 'parent' => $oldtopid));
                 }
             }
         }
@@ -5152,7 +5427,6 @@ abstract class restore_questions_activity_structure_step extends restore_activit
         if (!property_exists($data, 'variant')) {
             $data->variant = 1;
         }
-        $data->timemodified    = $this->apply_date_offset($data->timemodified);
 
         if (!property_exists($data, 'maxfraction')) {
             $data->maxfraction = 1;
@@ -5187,7 +5461,6 @@ abstract class restore_questions_activity_structure_step extends restore_activit
         unset($data->response);
 
         $data->questionattemptid = $this->get_new_parentid($nameprefix . 'question_attempt');
-        $data->timecreated = $this->apply_date_offset($data->timecreated);
         $data->userid      = $this->get_mappingid('user', $data->userid);
 
         // Everything ready, insert and create mapping (needed by question_sessions)
@@ -5436,5 +5709,150 @@ abstract class restore_questions_activity_structure_step extends restore_activit
         } else {
             return $state->answer;
         }
+    }
+}
+
+/**
+ * Restore completion defaults for each module type
+ *
+ * @package     core_backup
+ * @copyright   2017 Marina Glancy
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class restore_completion_defaults_structure_step extends restore_structure_step {
+    /**
+     * To conditionally decide if this step must be executed.
+     */
+    protected function execute_condition() {
+        // No completion on the front page.
+        if ($this->get_courseid() == SITEID) {
+            return false;
+        }
+
+        // No default completion info found, don't execute.
+        $fullpath = $this->task->get_taskbasepath();
+        $fullpath = rtrim($fullpath, '/') . '/' . $this->filename;
+        if (!file_exists($fullpath)) {
+            return false;
+        }
+
+        // Arrived here, execute the step.
+        return true;
+    }
+
+    /**
+     * Function that will return the structure to be processed by this restore_step.
+     *
+     * @return restore_path_element[]
+     */
+    protected function define_structure() {
+        return [new restore_path_element('completion_defaults', '/course_completion_defaults/course_completion_default')];
+    }
+
+    /**
+     * Processor for path element 'completion_defaults'
+     *
+     * @param stdClass|array $data
+     */
+    protected function process_completion_defaults($data) {
+        global $DB;
+
+        $data = (array)$data;
+        $oldid = $data['id'];
+        unset($data['id']);
+
+        // Find the module by name since id may be different in another site.
+        if (!$mod = $DB->get_record('modules', ['name' => $data['modulename']])) {
+            return;
+        }
+        unset($data['modulename']);
+
+        // Find the existing record.
+        $newid = $DB->get_field('course_completion_defaults', 'id',
+            ['course' => $this->task->get_courseid(), 'module' => $mod->id]);
+        if (!$newid) {
+            $newid = $DB->insert_record('course_completion_defaults',
+                ['course' => $this->task->get_courseid(), 'module' => $mod->id] + $data);
+        } else {
+            $DB->update_record('course_completion_defaults', ['id' => $newid] + $data);
+        }
+
+        // Save id mapping for restoring associated events.
+        $this->set_mapping('course_completion_defaults', $oldid, $newid);
+    }
+}
+
+/**
+ * Index course after restore.
+ *
+ * @package core_backup
+ * @copyright 2017 The Open University
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class restore_course_search_index extends restore_execution_step {
+    /**
+     * When this step is executed, we add the course context to the queue for reindexing.
+     */
+    protected function define_execution() {
+        $context = \context_course::instance($this->task->get_courseid());
+        \core_search\manager::request_index($context);
+    }
+}
+
+/**
+ * Index activity after restore (when not restoring whole course).
+ *
+ * @package core_backup
+ * @copyright 2017 The Open University
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class restore_activity_search_index extends restore_execution_step {
+    /**
+     * When this step is executed, we add the activity context to the queue for reindexing.
+     */
+    protected function define_execution() {
+        $context = \context::instance_by_id($this->task->get_contextid());
+        \core_search\manager::request_index($context);
+    }
+}
+
+/**
+ * Index block after restore (when not restoring whole course).
+ *
+ * @package core_backup
+ * @copyright 2017 The Open University
+ * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class restore_block_search_index extends restore_execution_step {
+    /**
+     * When this step is executed, we add the block context to the queue for reindexing.
+     */
+    protected function define_execution() {
+        // A block in the restore list may be skipped because a duplicate is detected.
+        // In this case, there is no new blockid (or context) to get.
+        if (!empty($this->task->get_blockid())) {
+            $context = \context_block::instance($this->task->get_blockid());
+            \core_search\manager::request_index($context);
+        }
+    }
+}
+
+/**
+ * Restore action events.
+ *
+ * @package     core_backup
+ * @copyright   2017 onwards Ankit Agarwal
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class restore_calendar_action_events extends restore_execution_step {
+    /**
+     * What to do when this step is executed.
+     */
+    protected function define_execution() {
+        // We just queue the task here rather trying to recreate everything manually.
+        // The task will automatically populate all data.
+        $task = new \core\task\refresh_mod_calendar_events_task();
+        $task->set_custom_data(array('courseid' => $this->get_courseid()));
+        \core\task\manager::queue_adhoc_task($task, true);
     }
 }

@@ -33,6 +33,9 @@
  */
 class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSelector {
 
+    // Use the named selector trait.
+    use behat_named_selector;
+
     /**
      * Creates selector instance.
      */
@@ -45,12 +48,17 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
             $this->registerNamedXpath($name, $xpath);
         }
 
-        // Call the constructor after adding any new selector or replacement values.
+        foreach (self::$customreplacements as $from => $tos) {
+            $this->registerReplacement($from, implode(' or ', $tos));
+        }
+
+        $this->registerReplacement('%iconMatch%', "(contains(concat(' ', @class, ' '), ' icon ') or name() = 'img')");
+        $this->registerReplacement('%imgAltMatch%', './/*[%iconMatch% and (%altMatch% or %titleMatch%)]');
         parent::__construct();
     }
 
     /**
-     * @var Allowed types when using text selectors arguments.
+     * @var array Allowed types when using text selectors arguments.
      */
     protected static $allowedtextselectors = array(
         'activity' => 'activity',
@@ -58,9 +66,8 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'css_element' => 'css_element',
         'dialogue' => 'dialogue',
         'fieldset' => 'fieldset',
+        'icon' => 'icon',
         'list_item' => 'list_item',
-        'message_area_region' => 'message_area_region',
-        'message_area_region_content' => 'message_area_region_content',
         'question' => 'question',
         'region' => 'region',
         'section' => 'section',
@@ -68,10 +75,11 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'table_row' => 'table_row',
         'xpath_element' => 'xpath_element',
         'form_row' => 'form_row',
+        'autocomplete' => 'autocomplete',
     );
 
     /**
-     * @var Allowed types when using selector arguments.
+     * @var array Allowed types when using selector arguments.
      */
     protected static $allowedselectors = array(
         'activity' => 'activity',
@@ -84,12 +92,16 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'fieldset' => 'fieldset',
         'file' => 'file',
         'filemanager' => 'filemanager',
+        'group_message' => 'group_message',
+        'group_message_conversation' => 'group_message_conversation',
+        'group_message_header' => 'group_message_header',
+        'group_message_member' => 'group_message_member',
+        'group_message_tab' => 'group_message_tab',
+        'group_message_message_content' => 'group_message_message_content',
+        'icon' => 'icon',
         'link' => 'link',
         'link_or_button' => 'link_or_button',
         'list_item' => 'list_item',
-        'message_area_action' => 'message_area_action',
-        'message_area_region' => 'message_area_region',
-        'message_area_region_content' => 'message_area_region_content',
         'optgroup' => 'optgroup',
         'option' => 'option',
         'question' => 'question',
@@ -102,6 +114,9 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'text' => 'text',
         'xpath_element' => 'xpath_element',
         'form_row' => 'form_row',
+        'autocomplete_selection' => 'autocomplete_selection',
+        'autocomplete_suggestions' => 'autocomplete_suggestions',
+        'autocomplete' => 'autocomplete',
     );
 
     /**
@@ -110,7 +125,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
      * xpaths that represents that names and includes a placeholder that
      * will be replaced by the locator. These are Moodle's own xpaths.
      *
-     * @var XPaths for moodle elements.
+     * @var array XPaths for moodle elements.
      */
     protected static $moodleselectors = array(
         'activity' => <<<XPATH
@@ -118,7 +133,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
 XPATH
         , 'block' => <<<XPATH
 .//*[@data-block][contains(concat(' ', normalize-space(@class), ' '), concat(' ', %locator%, ' ')) or
-     descendant::*[self::h2|self::h3][normalize-space(.) = %locator%]  or
+     descendant::*[self::h2|self::h3|self::h4|self::h5][normalize-space(.) = %locator%]  or
      @aria-label = %locator%]
 XPATH
         , 'dialogue' => <<<XPATH
@@ -130,6 +145,42 @@ XPATH
     normalize-space(descendant::div[@class='hd']) = %locator%]
         |
 .//div[@data-region='modal' and descendant::*[@data-region='title'] = %locator%]
+        |
+.//div[
+        contains(concat(' ', normalize-space(@class), ' '), ' modal-content ')
+            and
+        normalize-space(descendant::*[self::h4 or self::h5][contains(concat(' ', normalize-space(@class), ' '), ' modal-title ')]) = %locator%
+    ]
+        |
+.//div[
+        contains(concat(' ', normalize-space(@class), ' '), ' modal ')
+            and
+        normalize-space(descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' modal-header ')] = %locator%)
+    ]
+XPATH
+        , 'group_message' => <<<XPATH
+        .//*[@data-conversation-id]//img[contains(@alt, %locator%)]/..
+XPATH
+        , 'group_message_conversation' => <<<XPATH
+            .//*[@data-region='message-drawer' and contains(., %locator%)]//div[@data-region='content-message-container']
+XPATH
+    , 'group_message_header' => <<<XPATH
+        .//*[@data-region='message-drawer']//div[@data-region='header-container']//*[text()[contains(., %locator%)]]
+XPATH
+    , 'group_message_member' => <<<XPATH
+        .//*[@data-region='message-drawer']//div[@data-region='group-info-content-container']
+        //div[@class='list-group' and not(contains(@class, 'hidden'))]//*[text()[contains(., %locator%)]] |
+        .//*[@data-region='message-drawer']//div[@data-region='group-info-content-container']
+        //div[@data-region='empty-message-container' and not(contains(@class, 'hidden')) and contains(., %locator%)]
+XPATH
+    , 'group_message_tab' => <<<XPATH
+        .//*[@data-region='message-drawer']//button[@data-toggle='collapse' and contains(string(), %locator%)]
+XPATH
+    , 'group_message_message_content' => <<<XPATH
+        .//*[@data-region='message-drawer']//*[@data-region='message' and @data-message-id and contains(., %locator%)]
+XPATH
+        , 'icon' => <<<XPATH
+.//*[contains(concat(' ', normalize-space(@class), ' '), ' icon ') and ( contains(normalize-space(@title), %locator%))]
 XPATH
         , 'list_item' => <<<XPATH
 .//li[contains(normalize-space(.), %locator%) and not(.//li[contains(normalize-space(.), %locator%)])]
@@ -160,14 +211,14 @@ XPATH
         , 'form_row' => <<<XPATH
 .//*[self::label or self::div[contains(concat(' ', @class, ' '), ' fstaticlabel ')]][contains(., %locator%)]/ancestor::*[contains(concat(' ', @class, ' '), ' fitem ')]
 XPATH
-        , 'message_area_region' => <<<XPATH
-.//div[@data-region='messaging-area']/descendant::*[@data-region = %locator%]
+        , 'autocomplete_selection' => <<<XPATH
+.//div[contains(concat(' ', normalize-space(@class), ' '), concat(' ', 'form-autocomplete-selection', ' '))]/span[@role='listitem'][contains(normalize-space(.), %locator%)]
 XPATH
-        , 'message_area_region_content' => <<<XPATH
-.//div[@data-region='messaging-area']/descendant::*[@data-region-content = %locator%]
+        , 'autocomplete_suggestions' => <<<XPATH
+.//ul[contains(concat(' ', normalize-space(@class), ' '), concat(' ', 'form-autocomplete-suggestions', ' '))]/li[@role='option'][contains(normalize-space(.), %locator%)]
 XPATH
-        , 'message_area_action' => <<<XPATH
-.//div[@data-region='messaging-area']/descendant::*[@data-action = %locator%]
+        , 'autocomplete' => <<<XPATH
+.//descendant::input[@id = //label[contains(normalize-space(string(.)), %locator%)]/@for]/ancestor::*[@data-fieldtype = 'autocomplete']
 XPATH
     );
 
@@ -195,6 +246,26 @@ XPATH
     /descendant::input[@id = %locator% or @id = //label[contains(normalize-space(string(.)), %locator%)]/@for]
 XPATH
         ],
+    ];
+
+    /**
+     * Mink comes with a number of named replacements.
+     * Sometimes we want to add our own.
+     *
+     * @var array XPaths for moodle elements.
+     */
+    protected static $customreplacements = [
+        '%buttonMatch%' => [
+            'upstream' => '%idOrNameMatch% or %valueMatch% or %titleMatch%',
+            'aria' => '%ariaLabelMatch%',
+        ],
+        '%ariaLabelMatch%' => [
+            'moodle' => 'contains(./@aria-label, %locator%)',
+        ],
+    ];
+
+    /** @var List of deprecated selectors */
+    protected static $deprecatedselectors = [
     ];
 
     /**

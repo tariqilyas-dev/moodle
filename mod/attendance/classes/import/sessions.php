@@ -107,7 +107,11 @@ class sessions {
             get_string('subnet', 'attendance'),
             get_string('automark', 'attendance'),
             get_string('autoassignstatus', 'attendance'),
-            get_string('absenteereport', 'attendance')
+            get_string('absenteereport', 'attendance'),
+            get_string('preventsharedip', 'attendance'),
+            get_string('preventsharediptime', 'attendance'),
+            get_string('calendarevent', 'attendance'),
+            get_string('includeqrcode', 'attendance'),
         );
     }
 
@@ -143,7 +147,11 @@ class sessions {
                 'subnet' => $data->header12,
                 'automark' => $data->header13,
                 'autoassignstatus' => $data->header14,
-                'absenteereport' => $data->header15
+                'absenteereport' => $data->header15,
+                'preventsharedip' => $data->header16,
+                'preventsharediptime' => $data->header17,
+                'calendarevent' => $data->header18,
+                'includeqrcode' => $data->header19
             );
         } else {
             return array(
@@ -162,7 +170,11 @@ class sessions {
                 'subnet' => 12,
                 'automark' => 13,
                 'autoassignstatus' => 14,
-                'absenteereport' => 15
+                'absenteereport' => 15,
+                'preventsharedip' => 16,
+                'preventsharediptime' => 17,
+                'calendarevent' => 18,
+                'includeqrcode' => 19
             );
         }
     }
@@ -283,10 +295,6 @@ class sessions {
             $session->sdescription['text'] = '<p>' . $this->get_column_data($row, $mapping['description']) . '</p>';
             $session->sdescription['format'] = FORMAT_HTML;
             $session->sdescription['itemid'] = 0;
-
-            $session->repeaton = $this->get_column_data($row, $mapping['repeaton']);
-            $session->repeatevery = $this->get_column_data($row, $mapping['repeatevery']);
-            $session->repeatuntil = $this->get_column_data($row, $mapping['repeatuntil']);
             $session->passwordgrp = $this->get_column_data($row, $mapping['passwordgrp']);
             $session->subnet = $this->get_column_data($row, $mapping['subnet']);
             // Set session subnet restriction. Use the default activity level subnet if there isn't one set for this session.
@@ -321,6 +329,35 @@ class sessions {
             } else {
                 $session->absenteereport = $this->get_column_data($row, $mapping['absenteereport']);
             }
+            if ($mapping['preventsharedip'] == -1) {
+                $session->preventsharedip = $pluginconfig->preventsharedip;
+            } else {
+                $session->preventsharedip = $this->get_column_data($row, $mapping['preventsharedip']);
+            }
+            if ($mapping['preventsharediptime'] == -1) {
+                $session->preventsharediptime = $pluginconfig->preventsharediptime;
+            } else {
+                $session->preventsharediptime = $this->get_column_data($row, $mapping['preventsharediptime']);
+            }
+
+            if ($mapping['calendarevent'] == -1) {
+                $session->calendarevent = $pluginconfig->calendarevent_default;
+            } else {
+                $session->calendarevent = $this->get_column_data($row, $mapping['calendarevent']);
+            }
+
+            if ($mapping['includeqrcode'] == -1) {
+                $session->includeqrcode = $pluginconfig->includeqrcode_default;
+            } else {
+                $session->includeqrcode = $this->get_column_data($row, $mapping['includeqrcode']);
+
+                if ($session->includeqrcode == 1 && $session->studentscanmark != 1) {
+                    \mod_attendance_notifyqueue::notify_problem(get_string('error:qrcode', 'attendance'));
+                    continue;
+                }
+
+            }
+
             $session->statusset = 0;
 
             $sessions[] = $session;

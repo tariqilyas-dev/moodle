@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * columns2.php
+ *
  * @package   theme_klass
  * @copyright 2015 Lmsace Dev Team,lmsace.com
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -50,9 +52,17 @@ $surl = new moodle_url('/course/search.php');
 $ssearchcourses = get_string('searchcourses');
 $shome = get_string('home', 'theme_klass');
 
+$custom = $OUTPUT->custom_menu();
+
+if ($custom == '') {
+    $class = "navbar-toggler hidden-lg-up nocontent-navbar";
+} else {
+    $class = "navbar-toggler hidden-lg-up";
+}
 
 // Footer Content.
 $logourlfooter = get_logo_url('footer');
+$footlogo = theme_klass_get_setting('footerlogo');
 $footnote = theme_klass_get_setting('footnote', 'format_html');
 $fburl    = theme_klass_get_setting('fburl');
 $pinurl   = theme_klass_get_setting('pinurl');
@@ -61,16 +71,49 @@ $gpurl    = theme_klass_get_setting('gpurl');
 $address  = theme_klass_get_setting('address');
 $emailid  = theme_klass_get_setting('emailid');
 $phoneno  = theme_klass_get_setting('phoneno');
-$contact = ($emailid != '' || $address != '' || $phoneno != '') ? 1 : 0;
 $copyrightfooter = theme_klass_get_setting('copyright_footer');
 $infolink = theme_klass_get_setting('infolink');
+$infolink = theme_klass_infolink();
+
 $sinfo = get_string('info', 'theme_klass');
 $scontactus = get_string('contact_us', 'theme_klass');
 $sphone = get_string('phone', 'theme_klass');
 $semail = get_string('email', 'theme_klass');
 $sgetsocial = get_string('get_social', 'theme_klass');
-$url =  ($fburl != '' || $pinurl != '' || $twurl != '' || $gpurl != '') ? 1 : 0;
-$infolink = theme_klass_infolink();
+
+$url = ($fburl != '' || $pinurl != '' || $twurl != '' || $gpurl != '') ? 1 : 0;
+$contact = ($emailid != '' || $address != '' || $phoneno != '') ? 1 : 0;
+
+if ($footlogo != '' || $footnote != '' || $infolink != '' || $url != 0 || $contact != 0 || $copyrightfooter != '') {
+    $footerall = 1;
+} else {
+    $footerall = 0;
+}
+
+$block1 = ($footlogo != '' || $footnote != '') ? 1 : 0;
+$infoslink = ($infolink != '') ? 1 : 0;
+$blockarrange = $block1 + $infoslink + $contact + $url;
+
+switch ($blockarrange) {
+    case 4:
+        $colclass = 'col-md-3';
+        break;
+    case 3:
+        $colclass = 'col-md-4';
+        break;
+    case 2:
+        $colclass = 'col-md-6';
+        break;
+    case 1:
+        $colclass = 'col-md-12';
+        break;
+    case 0:
+        $colclass = '';
+        break;
+    default:
+        $colclass = 'col-md-3';
+    break;
+}
 
 $templatecontext = [
     'sitename' => format_string($SITE->shortname, true, ['context' => context_course::instance(SITEID), "escape" => false]),
@@ -102,8 +145,12 @@ $templatecontext = [
     "s_phone" => $sphone,
     "s_email" => $semail,
     "s_get_social" => $sgetsocial,
-	"url" => $url,
-	"contact" => $contact
+    "url" => $url,
+    "contact" => $contact,
+    "footerall" => $footerall,
+    "customclass" => $class,
+    "block1" => $block1,
+    "colclass" => $colclass
 ];
 
 $templatecontext['flatnavigation'] = $PAGE->flatnav;

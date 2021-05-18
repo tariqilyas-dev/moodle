@@ -223,7 +223,7 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
         try {
             self::resetAllData(true);
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
         }
         $this->assertEquals(1, $DB->get_field('user', 'confirmed', array('id'=>2)));
 
@@ -234,7 +234,7 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
         try {
             self::resetAllData(true);
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
             $this->assertContains('xx', $e->getMessage());
             $this->assertContains('admin', $e->getMessage());
             $this->assertContains('rolesactive', $e->getMessage());
@@ -276,7 +276,7 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
         try {
             self::resetAllData(true);
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
             $this->assertEquals(1, $SITE->id);
             $this->assertSame($SITE, $COURSE);
             $this->assertSame($SITE, $COURSE);
@@ -287,7 +287,7 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
         try {
             self::resetAllData(true);
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
             $this->assertEquals(0, $USER->id);
         }
     }
@@ -377,7 +377,7 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
             $this->assertTimeCurrent(time()+10);
             $this->fail('Failed assert expected');
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_ExpectationFailedException', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\ExpectationFailedException', $e);
         }
 
         try {
@@ -385,7 +385,7 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
             $this->assertTimeCurrent(time()-10);
             $this->fail('Failed assert expected');
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_ExpectationFailedException', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\ExpectationFailedException', $e);
         }
     }
 
@@ -516,21 +516,16 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
         $message3->smallmessage      = 'small message';
         $message3->notification      = 0;
 
-        try {
-            message_send($message3);
-            $this->fail('coding expcetion expected if invalid component specified');
-        } catch (moodle_exception $e) {
-            $this->assertInstanceOf('coding_exception', $e);
-        }
+        $this->assertFalse(message_send($message3));
+        $this->assertDebuggingCalled('Attempt to send msg from a provider xxxx_yyyyy/instantmessage '.
+            'that is inactive or not allowed for the user id='.$user1->id);
 
         $message3->component = 'moodle';
         $message3->name      = 'yyyyyy';
-        try {
-            message_send($message3);
-            $this->fail('coding expcetion expected if invalid name specified');
-        } catch (moodle_exception $e) {
-            $this->assertInstanceOf('coding_exception', $e);
-        }
+
+        $this->assertFalse(message_send($message3));
+        $this->assertDebuggingCalled('Attempt to send msg from a provider moodle/yyyyyy '.
+            'that is inactive or not allowed for the user id='.$user1->id);
 
         message_send($message1);
         $this->assertEquals(1, $sink->count());
@@ -544,6 +539,10 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
      * @depends test_message_redirection
      */
     public function test_message_redirection_noreset($sink) {
+        if ($this->isInIsolation()) {
+            $this->markTestSkipped('State cannot be carried over between tests in isolated tests');
+        }
+
         $this->preventResetByRollback(); // Messaging is not compatible with transactions...
         $this->resetAfterTest();
 
@@ -600,19 +599,19 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
         try {
             $this->setTimezone('Pacific/Auckland', '');
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
         }
 
         try {
             $this->setTimezone('Pacific/Auckland', 'xxxx');
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
         }
 
         try {
             $this->setTimezone('Pacific/Auckland', null);
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
         }
 
     }
@@ -637,7 +636,7 @@ class core_phpunit_advanced_testcase extends advanced_testcase {
         try {
             self::resetAllData(true);
         } catch (Exception $e) {
-            $this->assertInstanceOf('PHPUnit_Framework_Error_Warning', $e);
+            $this->assertInstanceOf('PHPUnit\Framework\Error\Warning', $e);
         }
 
         if ($CFG->ostype === 'WINDOWS') {

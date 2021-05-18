@@ -94,11 +94,7 @@ class sqlsrv_native_moodle_database extends moodle_database {
         // the name used by 'extension_loaded()' is case specific! The extension
         // therefore *could be* mixed case and hence not found.
         if (!function_exists('sqlsrv_num_rows')) {
-            if (stripos(PHP_OS, 'win') === 0) {
-                return get_string('nativesqlsrvnodriver', 'install');
-            } else {
-                return get_string('nativesqlsrvnonwindows', 'install');
-            }
+            return get_string('nativesqlsrvnodriver', 'install');
         }
         return true;
     }
@@ -447,7 +443,7 @@ class sqlsrv_native_moodle_database extends moodle_database {
      * @return array of table names in lowercase and without prefix
      */
     public function get_tables($usecache = true) {
-        if ($usecache and count($this->tables) > 0) {
+        if ($usecache and $this->tables !== null) {
             return $this->tables;
         }
         $this->tables = array ();
@@ -846,6 +842,30 @@ class sqlsrv_native_moodle_database extends moodle_database {
     }
 
     /**
+     * Whether the given SQL statement has the ORDER BY clause in the main query.
+     *
+     * @param string $sql the SQL statement
+     * @return bool true if the main query has the ORDER BY clause; otherwise, false.
+     */
+    protected static function has_query_order_by(string $sql) {
+        $sqltoupper = strtoupper($sql);
+        // Fail fast if there is no ORDER BY clause in the original query.
+        if (strpos($sqltoupper, 'ORDER BY') === false) {
+            return false;
+        }
+
+        // Search for an ORDER BY clause in the main query, not in any subquery (not always allowed in MSSQL)
+        // or in clauses like OVER with a window function e.g. ROW_NUMBER() OVER (ORDER BY ...) or RANK() OVER (ORDER BY ...):
+        // use PHP PCRE recursive patterns to remove everything found within round brackets.
+        $mainquery = preg_replace('/\(((?>[^()]+)|(?R))*\)/', '()', $sqltoupper);
+        if (strpos($mainquery, 'ORDER BY') !== false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Get a number of records as a moodle_recordset using a SQL statement.
      *
      * Since this method is a little less readable, use of it should be restricted to
@@ -880,9 +900,9 @@ class sqlsrv_native_moodle_database extends moodle_database {
             } else {
                 $needscrollable = false; // Using supported fetch/offset, no need to scroll anymore.
                 $sql = (substr($sql, -1) === ';') ? substr($sql, 0, -1) : $sql;
-                // We need order by to use FETCH/OFFSET.
+                // We need ORDER BY to use FETCH/OFFSET.
                 // Ordering by first column shouldn't break anything if there was no order in the first place.
-                if (!strpos(strtoupper($sql), "ORDER BY")) {
+                if (!self::has_query_order_by($sql)) {
                     $sql .= " ORDER BY 1";
                 }
 
@@ -1589,5 +1609,27 @@ class sqlsrv_native_moodle_database extends moodle_database {
         $this->query_start('native sqlsrv_rollback', NULL, SQL_QUERY_AUX);
         $result = sqlsrv_rollback($this->sqlsrv);
         $this->query_end($result);
+    }
+
+    /**
+     * Is fulltext search enabled?.
+     *
+     * @return bool
+     */
+    public function is_fulltext_search_supported() {
+        global $CFG;
+
+        $sql = "SELECT FULLTEXTSERVICEPROPERTY('IsFullTextInstalled')";
+        $this->query_start($sql, null, SQL_QUERY_AUX);
+        $result = sqlsrv_query($this->sqlsrv, $sql);
+        $this->query_end($result);
+        if ($result) {
+            if ($row = sqlsrv_fetch_array($result)) {
+                $property = (bool)reset($row);
+            }
+        }
+        $this->free_result($result);
+
+        return !empty($property);
     }
 }

@@ -479,7 +479,8 @@ class mod_quiz_renderer extends plugin_renderer_base {
 
         // Start the form.
         $output .= html_writer::start_tag('form',
-                array('action' => $attemptobj->processattempt_url(), 'method' => 'post',
+                array('action' => new moodle_url($attemptobj->processattempt_url(),
+                array('cmid' => $attemptobj->get_cmid())), 'method' => 'post',
                 'enctype' => 'multipart/form-data', 'accept-charset' => 'utf-8',
                 'id' => 'responseform'));
         $output .= html_writer::start_tag('div');
@@ -559,7 +560,8 @@ class mod_quiz_renderer extends plugin_renderer_base {
      */
     public function redo_question_button($slot, $disabled) {
         $attributes = array('type' => 'submit',  'name' => 'redoslot' . $slot,
-                'value' => get_string('redoquestion', 'quiz'), 'class' => 'mod_quiz-redo_question_button');
+            'value' => get_string('redoquestion', 'quiz'),
+            'class' => 'mod_quiz-redo_question_button btn btn-secondary');
         if ($disabled) {
             $attributes['disabled'] = 'disabled';
         }
@@ -682,7 +684,8 @@ class mod_quiz_renderer extends plugin_renderer_base {
             // Real question, show it.
             $flag = '';
             if ($attemptobj->is_question_flagged($slot)) {
-                $flag = html_writer::empty_tag('img', array('src' => $this->pix_url('i/flagged'),
+                // Quiz has custom JS manipulating these image tags - so we can't use the pix_icon method here.
+                $flag = html_writer::empty_tag('img', array('src' => $this->image_url('i/flagged'),
                         'alt' => get_string('flagged', 'question'), 'class' => 'questionflag icon-post'));
             }
             if ($attemptobj->can_navigate_to($slot)) {
@@ -730,6 +733,7 @@ class mod_quiz_renderer extends plugin_renderer_base {
             'finishattempt' => 1,
             'timeup' => 0,
             'slots' => '',
+            'cmid' => $attemptobj->get_cmid(),
             'sesskey' => sesskey(),
         );
 

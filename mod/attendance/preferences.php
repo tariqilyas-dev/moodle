@@ -52,6 +52,7 @@ $att = new mod_attendance_structure($att, $cm, $course, $context, $pageparams);
 $PAGE->set_url($att->url_preferences());
 $PAGE->set_title($course->shortname. ": ".$att->name.' - '.get_string('settings', 'attendance'));
 $PAGE->set_heading($course->fullname);
+$PAGE->force_settings_menu(true);
 $PAGE->set_cacheable(true);
 $PAGE->navbar->add(get_string('settings', 'attendance'));
 
@@ -69,7 +70,7 @@ switch ($att->pageparams->action) {
         $newdescription     = optional_param('newdescription', null, PARAM_TEXT);
         $newgrade           = optional_param('newgrade', 0, PARAM_RAW);
         $newstudentavailability = optional_param('newstudentavailability', null, PARAM_INT);
-        $newgrade = unformat_float($newgrade);
+        $newgrade = empty($newgrade) ? 0 : unformat_float($newgrade);
 
         $newstatus = new stdClass();
         $newstatus->attendanceid = $att->id;
@@ -104,7 +105,7 @@ switch ($att->pageparams->action) {
             redirect($att->url_preferences(), get_string('statusdeleted', 'attendance'));
         }
 
-        $message = get_string('deletecheckfull', '', get_string('variable', 'attendance'));
+        $message = get_string('deletecheckfull', 'attendance', get_string('variable', 'attendance'));
         $message .= str_repeat(html_writer::empty_tag('br'), 2);
         $message .= $status->acronym.': '.
                     ($status->description ? $status->description : get_string('nodescription', 'attendance'));

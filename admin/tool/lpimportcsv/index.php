@@ -21,7 +21,7 @@
  * @copyright  2016 Damyon Wiese
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-
+define('NO_OUTPUT_BUFFERING', true);
 require_once(__DIR__ . '/../../../config.php');
 require_once($CFG->libdir.'/adminlib.php');
 
@@ -62,7 +62,7 @@ if ($form->is_cancelled()) {
             $form->set_import_error($error);
         } else {
             $framework = $importer->import();
-            $urlparams = ['competencyframeworkid' => $framework->get_id(), 'pagecontextid' => $context->id];
+            $urlparams = ['competencyframeworkid' => $framework->get('id'), 'pagecontextid' => $context->id];
             $frameworksurl = new moodle_url('/admin/tool/lp/competencies.php', $urlparams);
             echo $OUTPUT->notification(get_string('competencyframeworkcreated', 'tool_lp'), 'notifysuccess');
             echo $OUTPUT->continue_button($frameworksurl);

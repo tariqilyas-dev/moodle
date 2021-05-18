@@ -108,7 +108,7 @@ class behat_mod_feedback extends behat_base {
         $this->execute('behat_auth::i_log_in_as', $username);
 
         // Navigate to feedback complete form.
-        $this->execute('behat_general::click_link', $coursename);
+        $this->execute('behat_navigation::i_am_on_course_homepage', $coursename);
         $this->execute('behat_general::click_link', $feedbackname);
         $this->execute('behat_general::click_link', $completeform);
 
@@ -139,7 +139,7 @@ class behat_mod_feedback extends behat_base {
                 return $behatgeneralcontext->download_file_from_link($link);
             },
             array('link' => $link),
-            self::EXTENDED_TIMEOUT,
+            behat_base::get_extended_timeout(),
             $exception
         );
 

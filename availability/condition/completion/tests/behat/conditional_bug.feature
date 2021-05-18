@@ -19,8 +19,8 @@ Feature: Confirm that conditions on completion no longer cause a bug
   Scenario: Multiple completion conditions on glossary
     # Set up course.
     Given I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Edit settings" node in "Course administration"
+    And I am on "Course 1" course homepage
+    And I navigate to "Edit settings" in current page administration
     And I expand all fieldsets
     And I set the field "Enable completion tracking" to "Yes"
     And I press "Save and display"

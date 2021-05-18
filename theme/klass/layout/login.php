@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * login.php
+ *
  * @package    theme_klass
  * @copyright  2013 Moodle, moodle.org
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,9 +28,11 @@ require_once(dirname(__FILE__) .'/includes/header.php');
 $templatecontext = [
     'sitename' => format_string($SITE->shortname, true, ['context' => context_course::instance(SITEID), "escape" => false]),
     'output' => $OUTPUT,
-    'bodyattributes' => $bodyattributes
+    'bodyattributes' => $bodyattributes,
+    'headerlayout' => $headerlayout,
 ];
 
 echo $OUTPUT->render_from_template('theme_klass/login', $templatecontext);
 echo ($flatnavbar) ? $flatnavbar : "";
 require_once(dirname(__FILE__) .'/includes/footer.php');
+echo $footerlayout;

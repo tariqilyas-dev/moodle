@@ -5,9 +5,75 @@ Feature: Award badges
   I need to add criteria to badges in the system
 
   @javascript
+  Scenario: Award badge on other badges as criteria
+    Given the following "users" exist:
+      | username | firstname | lastname | email |
+      | teacher1 | Teacher | 1 | teacher1@example.com |
+      | student1 | Student | 1 | student1@example.com |
+    And the following "courses" exist:
+      | fullname | shortname | category | groupmode |
+      | Course 1 | C1 | 0 | 1 |
+    And the following "course enrolments" exist:
+      | user | course | role |
+      | teacher1 | C1 | editingteacher |
+      | student1 | C1 | student |
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    # Create course badge 1.
+    And I navigate to "Badges > Add a new badge" in current page administration
+    And I follow "Add a new badge"
+    And I set the following fields to these values:
+      | Name | Course Badge 1 |
+      | Description | Course badge 1 description |
+      | issuername | Tester of course badge |
+    And I upload "badges/tests/behat/badge.png" file to "Image" filemanager
+    And I press "Create badge"
+    And I set the field "type" to "Manual issue by role"
+    And I expand all fieldsets
+    # Set to ANY of the roles awards badge.
+    And I set the field "Teacher" to "1"
+    And I set the field "Any of the selected roles awards the badge" to "1"
+    And I press "Save"
+    And I press "Enable access"
+    And I press "Continue"
+    # Badge #2
+    And I am on "Course 1" course homepage
+    And I navigate to "Badges > Add a new badge" in current page administration
+    And I follow "Add a new badge"
+    And I set the following fields to these values:
+      | Name | Course Badge 2 |
+      | Description | Course badge 2 description |
+      | issuername | Tester of course badge |
+    And I upload "badges/tests/behat/badge.png" file to "Image" filemanager
+    And I press "Create badge"
+    # Set "course badge 1" as criteria
+    And I set the field "type" to "Awarded badges"
+    And I set the field "id_badge_badges" to "Course Badge 1"
+    And I press "Save"
+    And I press "Enable access"
+    And I press "Continue"
+    And I follow "Manage badges"
+    And I follow "Course Badge 1"
+    And I follow "Recipients (0)"
+    And I press "Award badge"
+    # Award course badge 1 to student 1.
+    And I set the field "potentialrecipients[]" to "Student 1 (student1@example.com)"
+    When I press "Award badge"
+    And I follow "Course Badge 1"
+    And I follow "Recipients (1)"
+    Then I should see "Recipients (1)"
+    And I log out
+    # Student 1 should have both badges.
+    And I log in as "student1"
+    And I follow "Profile" in the user menu
+    When I click on "Course 1" "link" in the "region-main" "region"
+    Then I should see "Course Badge 1"
+    And I should see "Course Badge 2"
+
+  @javascript
   Scenario: Award profile badge
     Given I log in as "admin"
-    And I navigate to "Add a new badge" node in "Site administration > Badges"
+    And I navigate to "Badges > Add a new badge" in site administration
     And I set the following fields to these values:
       | Name | Profile Badge |
       | Description | Test badge description |
@@ -45,7 +111,7 @@ Feature: Award badges
       | teacher | teacher | 1 | teacher1@example.com |
       | student | student | 1 | student1@example.com |
     And I log in as "admin"
-    And I navigate to "Add a new badge" node in "Site administration > Badges"
+    And I navigate to "Badges > Add a new badge" in site administration
     And I set the following fields to these values:
       | Name | Site Badge |
       | Description | Site badge description |
@@ -86,8 +152,8 @@ Feature: Award badges
       | student1 | C1 | student |
       | student2 | C1 | student |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Add a new badge" node in "Course administration > Badges"
+    And I am on "Course 1" course homepage
+    And I navigate to "Badges > Add a new badge" in current page administration
     And I follow "Add a new badge"
     And I set the following fields to these values:
       | Name | Course Badge |
@@ -128,8 +194,8 @@ Feature: Award badges
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Edit settings" node in "Course administration"
+    And I am on "Course 1" course homepage
+    And I navigate to "Edit settings" in current page administration
     And I set the following fields to these values:
       | Enable completion tracking | Yes |
     And I press "Save and display"
@@ -137,8 +203,9 @@ Feature: Award badges
     And I add a "Assignment" to section "1" and I fill the form with:
       | Assignment name | Test assignment name |
       | Description | Submit your online text |
-    And I follow "Course 1"
-    And I navigate to "Add a new badge" node in "Course administration > Badges"
+      | id_completion | 1                     |
+    And I am on "Course 1" course homepage
+    And I navigate to "Badges > Add a new badge" in current page administration
     And I follow "Add a new badge"
     And I set the following fields to these values:
       | Name | Course Badge |
@@ -156,9 +223,8 @@ Feature: Award badges
     And I follow "Profile" in the user menu
     And I click on "Course 1" "link" in the "region-main" "region"
     Then I should not see "badges"
-    And I am on homepage
-    And I follow "Course 1"
-    And I press "Mark as complete: Test assignment name"
+    And I am on "Course 1" course homepage
+    And I click on "Not completed: Test assignment name" "icon"
     And I follow "Profile" in the user menu
     And I click on "Course 1" "link" in the "region-main" "region"
     Then I should see "Course Badge"
@@ -177,8 +243,8 @@ Feature: Award badges
       | teacher1 | C1 | editingteacher |
       | student1 | C1 | student |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Edit settings" node in "Course administration"
+    And I am on "Course 1" course homepage
+    And I navigate to "Edit settings" in current page administration
     And I set the following fields to these values:
       | Enable completion tracking | Yes |
     And I press "Save and display"
@@ -187,13 +253,14 @@ Feature: Award badges
       | Assignment name | Test assignment name |
       | Description | Submit your online text |
       | assignsubmission_onlinetext_enabled | 1 |
-    And I navigate to "Course completion" node in "Course administration"
+      | id_completion | 1                     |
+    And I navigate to "Course completion" in current page administration
     And I set the field "id_overall_aggregation" to "2"
     And I click on "Condition: Activity completion" "link"
     And I set the field "Assignment - Test assignment name" to "1"
     And I press "Save changes"
-    And I follow "Course 1"
-    And I navigate to "Add a new badge" node in "Course administration > Badges"
+    And I am on "Course 1" course homepage
+    And I navigate to "Badges > Add a new badge" in current page administration
     And I follow "Add a new badge"
     And I set the following fields to these values:
       | Name | Course Badge |
@@ -211,9 +278,8 @@ Feature: Award badges
     And I follow "Profile" in the user menu
     And I click on "Course 1" "link" in the "region-main" "region"
     Then I should not see "badges"
-    And I am on homepage
-    And I follow "Course 1"
-    And I press "Mark as complete: Test assignment name"
+    And I am on "Course 1" course homepage
+    And I click on "Not completed: Test assignment name" "icon"
     And I log out
     # Completion cron won't mark the whole course completed unless the
     # individual criteria was marked completed more than a second ago. So
@@ -242,9 +308,9 @@ Feature: Award badges
       | student1 | C1 | student |
       | student2 | C1 | student |
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     # Create course badge 1.
-    And I navigate to "Add a new badge" node in "Course administration > Badges"
+    And I navigate to "Badges > Add a new badge" in current page administration
     And I follow "Add a new badge"
     And I set the following fields to these values:
       | Name | Course Badge 1 |
@@ -269,7 +335,8 @@ Feature: Award badges
     And I follow "Recipients (1)"
     Then I should see "Recipients (1)"
     # Add course badge 2.
-    And I navigate to "Add a new badge" node in "Course administration > Badges"
+    And I am on "Course 1" course homepage
+    And I navigate to "Badges > Add a new badge" in current page administration
     And I follow "Add a new badge"
     And I set the following fields to these values:
       | Name | Course Badge 2 |
@@ -325,8 +392,8 @@ Feature: Award badges
       | student1 | C1 | student |
       | student2 | C1 | student |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I navigate to "Add a new badge" node in "Course administration > Badges"
+    And I am on "Course 1" course homepage
+    And I navigate to "Badges > Add a new badge" in current page administration
     And I follow "Add a new badge"
     And I set the following fields to these values:
       | Name | Course Badge |
@@ -355,4 +422,3 @@ Feature: Award badges
     When I press "Revoke badge"
     And I follow "Course Badge"
     Then I should see "Recipients (0)"
-

@@ -76,7 +76,7 @@
 }
 
 // TODO: MDL-55142 remove browser these brwoser hacks:
-/* stylelint-disable declaration-block-no-duplicate-properties, no-browser-hacks */
+/* stylelint-disable declaration-block-no-duplicate-properties */
 #chooseqtype .alloptions {
     overflow-x: hidden;
     overflow-y: auto;
@@ -482,6 +482,15 @@ body.path-question-type .fitem_fgroup .accesshide {
     padding: 0.3em 0;
 }
 
+.questionbankwindow .boxaligncenter.categoryinfo {
+    padding-left: 0;
+}
+
+.questionbankwindow .singlebutton div,
+.questionbankwindow .singlebutton div input {
+    margin-left: 0;
+}
+
 #page-mod-quiz-edit div.questionbank .modulespecificbuttonscontainer {
     padding: 0;
     strong {
@@ -507,6 +516,10 @@ body.path-question-type .fitem_fgroup .accesshide {
 
 .questionbankwindow .module {
     width: auto;
+}
+
+.questionbankwindow .form-autocomplete-selection {
+    margin-left: 0;
 }
 
 #page-mod-quiz-edit div.editq div.question div.content {
@@ -540,4 +553,8 @@ a#hidebankcmd {
 body.path-question-type .mform fieldset.hidden {
     padding: 0;
     margin: 0.7em 0 0;
+}
+
+.tag-condition-container {
+    position: relative;
 }

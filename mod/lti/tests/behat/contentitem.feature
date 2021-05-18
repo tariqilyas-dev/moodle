@@ -15,7 +15,7 @@ Feature: Content-Item support
       | user | course | role |
       | teacher1 | C1 | editingteacher |
     And I log in as "admin"
-    And I navigate to "Manage tools" node in "Site administration > Plugins > Activity modules > External tool"
+    And I navigate to "Plugins > Activity modules > External tool > Manage tools" in site administration
     # Create tool type that supports content-item.
     And I follow "configure a tool manually"
     And I set the field "Tool name" to "Teaching Tool 1"
@@ -29,16 +29,14 @@ Feature: Content-Item support
   @javascript
   Scenario: Tool that supports Content-Item Message type should be able to configure a tool via the Select content button
     When I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Teaching Tool 1" to section "1"
     Then the "Select content" "button" should be enabled
 
   @javascript
   Scenario: Editing a tool's settings that was configured from a preconfigured tool that supports Content-Item.
     When I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "Teaching Tool 1" to section "1"
     And the "Select content" "button" should be enabled
     And I set the field "Activity name" to "Test tool activity 1"
@@ -53,7 +51,7 @@ Feature: Content-Item support
   @javascript
   Scenario: Changing preconfigured tool selection
     Given I log in as "admin"
-    And I navigate to "Manage tools" node in "Site administration > Plugins > Activity modules > External tool"
+    And I navigate to "Plugins > Activity modules > External tool > Manage tools" in site administration
     And I follow "configure a tool manually"
     And I set the field "Tool name" to "Teaching Tool 2"
     And I set the field "Tool URL" to local url "/mod/lti/tests/fixtures/tool_provider.php"
@@ -62,8 +60,7 @@ Feature: Content-Item support
     And I press "Save changes"
     And I log out
     When I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "External tool" to section "1"
     # On load with no preconfigured tool selected: Select content button - disabled, Tool URL - enabled.
     And the field "Preconfigured tool" matches value "Automatic, based on tool URL"
@@ -89,8 +86,7 @@ Feature: Content-Item support
   @javascript
   Scenario: Editing a manually configured external tool
     Given I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "External tool" to section "1"
     And the field "Preconfigured tool" matches value "Automatic, based on tool URL"
     And I set the field "Activity name" to "Test tool activity 1"

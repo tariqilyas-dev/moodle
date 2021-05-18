@@ -7,6 +7,7 @@ Sample Packages downloaded from http://scorm.com/scorm-explained/technical-scorm
 * singlesco_scorm12.zip - Single SCO content packaging example. SCORM 1.2.
 * RuntimeMinimumCalls_SCORM12.zip - Multi-SCO packaging example. SCORM 1.2.
 * RuntimeBasicCalls_SCORM20043rdEdition.zip - Multi-SCO packaging example. SCORM 2004 3rd edition.
+* RuntimeMinimumCalls_SCORM12-mini.zip - modified 2 SCO version of RuntimeMinimumCalls_SCORM12.zip
 
 These packages were downloaded from http://scorm.com/ website,  the website
 disclaimer states that *Content on this site is licensed under a Creative
@@ -18,4 +19,5 @@ Other test packages
 * invalid.zip - zip file with an single html file, no SCORM config files, used for validation check.
 * validscorm.zip - non functional package with an imsmanifest.xml, used for validation check.
 * validaicc.zip - non functional package with AICC config files, used for validation check.
-* complexscorm.zip - copied from: https://github.com/jleyva/scorm-debugger
+* complexscorm.zip - copied from: https://github.com/jleyva/scorm-debugger.
+* singlescobasic_missingorg.zip - copy of scorm.com package but with missing org definition.

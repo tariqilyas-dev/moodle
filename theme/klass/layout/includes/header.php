@@ -15,9 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * header.php
+ *
  * @package    theme_klass
  * @copyright  2015 onwards LMSACE Dev Team (http://www.lmsace.com)
- * @authors    LMSACE Dev Team
+ * @author    LMSACE Dev Team
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -50,6 +52,14 @@ if (! $PAGE->url->compare($surl, URL_MATCH_BASE)) {
 $surl = new moodle_url('/course/search.php');
 $ssearchcourses = get_string('searchcourses');
 $shome = get_string('home', 'theme_klass');
+
+$custom = $OUTPUT->custom_menu();
+
+if ($custom == '') {
+    $class = "navbar-toggler hidden-lg-up nocontent-navbar";
+} else {
+    $class = "navbar-toggler hidden-lg-up";
+}
 
 
 // Footer Content.
@@ -101,9 +111,10 @@ $templatecontext = [
     "s_contact_us" => $scontactus,
     "s_phone" => $sphone,
     "s_email" => $semail,
-    "s_get_social" => $sgetsocial
+    "s_get_social" => $sgetsocial,
+    "customclass" => $class
 ];
 
 $templatecontext['flatnavigation'] = $PAGE->flatnav;
 $flatnavbar = $OUTPUT->render_from_template('theme_boost/nav-drawer', $templatecontext);
-echo $OUTPUT->render_from_template('theme_klass/header', $templatecontext);
+$headerlayout = $OUTPUT->render_from_template('theme_klass/header', $templatecontext);

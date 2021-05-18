@@ -14,13 +14,12 @@ Feature: We can change the grading type and maximum grade point values
       | activity | course | idnumber | name | intro |
       | assign | C1 | assign1| Test Assignment 1 | Test Assignment 1 |
     And I log in as "admin"
-    And I navigate to "General settings" node in "Site administration > Grades"
+    And I navigate to "Grades > General settings" in site administration
     And I set the following fields to these values:
       | Grade point maximum | 900 |
       | Grade point default | 800 |
     And I press "Save changes"
-    And I am on site homepage
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
 
   @javascript
   Scenario: Validate that switching the type of grading used correctly disables input form elements
@@ -93,12 +92,11 @@ Feature: We can change the grading type and maximum grade point values
     And I set the field "grade[modgrade_type]" to "point"
     And I set the field "grade[modgrade_point]" to "600"
     And I press "Save and display"
-    And I navigate to "General settings" node in "Site administration > Grades"
+    And I navigate to "Grades > General settings" in site administration
     And I set the following fields to these values:
       | Grade point maximum | 100 |
     And I press "Save changes"
-    And I am on site homepage
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test Assignment 1"
     And I navigate to "Edit settings" in current page administration
     And I press "Save and display"

@@ -266,6 +266,40 @@ abstract class format_base {
     }
 
     /**
+     * Method used in the rendered and during backup instead of legacy 'numsections'
+     *
+     * Default renderer will treat sections with sectionnumber greater that the value returned by this
+     * method as "orphaned" and not display them on the course page unless in editing mode.
+     * Backup will store this value as 'numsections'.
+     *
+     * This method ensures that 3rd party course format plugins that still use 'numsections' continue to
+     * work but at the same time we no longer expect formats to have 'numsections' property.
+     *
+     * @return int
+     */
+    public function get_last_section_number() {
+        $course = $this->get_course();
+        if (isset($course->numsections)) {
+            return $course->numsections;
+        }
+        $modinfo = get_fast_modinfo($course);
+        $sections = $modinfo->get_section_info_all();
+        return (int)max(array_keys($sections));
+    }
+
+    /**
+     * Method used to get the maximum number of sections for this course format.
+     * @return int
+     */
+    public function get_max_sections() {
+        $maxsections = get_config('moodlecourse', 'maxsections');
+        if (!isset($maxsections) || !is_numeric($maxsections)) {
+            $maxsections = 52;
+        }
+        return $maxsections;
+    }
+
+    /**
      * Returns true if the course has a front page.
      *
      * This function is called to determine if the course has a view page, whether or not
@@ -686,9 +720,14 @@ abstract class format_base {
         }
 
         if (!$forsection && empty($this->courseid)) {
-            // At this stage (this is called from definition_after_data) course data is already set as default.
-            // We can not overwrite what is in the database.
-            $mform->setDefault('enddate', $this->get_default_course_enddate($mform));
+            // Check if course end date form field should be enabled by default.
+            // If a default date is provided to the form element, it is magically enabled by default in the
+            // MoodleQuickForm_date_time_selector class, otherwise it's disabled by default.
+            if (get_config('moodlecourse', 'courseenddateenabled')) {
+                // At this stage (this is called from definition_after_data) course data is already set as default.
+                // We can not overwrite what is in the database.
+                $mform->setDefault('enddate', $this->get_default_course_enddate($mform));
+            }
         }
 
         return $elements;
@@ -709,6 +748,43 @@ abstract class format_base {
     }
 
     /**
+     * Prepares values of course or section format options before storing them in DB
+     *
+     * If an option has invalid value it is not returned
+     *
+     * @param array $rawdata associative array of the proposed course/section format options
+     * @param int|null $sectionid null if it is course format option
+     * @return array array of options that have valid values
+     */
+    protected function validate_format_options(array $rawdata, int $sectionid = null) : array {
+        if (!$sectionid) {
+            $allformatoptions = $this->course_format_options(true);
+        } else {
+            $allformatoptions = $this->section_format_options(true);
+        }
+        $data = array_intersect_key($rawdata, $allformatoptions);
+        foreach ($data as $key => $value) {
+            $option = $allformatoptions[$key] + ['type' => PARAM_RAW, 'element_type' => null, 'element_attributes' => [[]]];
+            $data[$key] = clean_param($value, $option['type']);
+            if ($option['element_type'] === 'select' && !array_key_exists($data[$key], $option['element_attributes'][0])) {
+                // Value invalid for select element, skip.
+                unset($data[$key]);
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * Validates format options for the course
+     *
+     * @param array $data data to insert/update
+     * @return array array of options that have valid values
+     */
+    public function validate_course_format_options(array $data) : array {
+        return $this->validate_format_options($data);
+    }
+
+    /**
      * Updates format options for a course or section
      *
      * If $data does not contain property with the option name, the option will not be updated
@@ -720,6 +796,7 @@ abstract class format_base {
      */
     protected function update_format_options($data, $sectionid = null) {
         global $DB;
+        $data = $this->validate_format_options((array)$data, $sectionid);
         if (!$sectionid) {
             $allformatoptions = $this->course_format_options();
             $sectionid = 0;
@@ -745,7 +822,6 @@ abstract class format_base {
                       'sectionid' => $sectionid
                     ), '', 'name,id,value');
         $changed = $needrebuild = false;
-        $data = (array)$data;
         foreach ($defaultoptions as $key => $value) {
             if (isset($records[$key])) {
                 if (array_key_exists($key, $data) && $records[$key]->value !== $data[$key]) {
@@ -1035,6 +1111,11 @@ abstract class format_base {
         $DB->delete_records('course_sections', array('id' => $section->id));
         rebuild_course_cache($course->id, true);
 
+        // Delete section summary files.
+        $context = \context_course::instance($course->id);
+        $fs = get_file_storage();
+        $fs->delete_area_files($context->id, 'course', 'section', $section->id);
+
         // Descrease 'numsections' if needed.
         if ($decreasenumsections) {
             $this->update_course_format_options(array('numsections' => $course->numsections - 1));
@@ -1172,6 +1253,79 @@ abstract class format_base {
         $startdate = $mform->getElementValue($fieldnames['startdate']);
         return $mform->getElement($fieldnames['startdate'])->exportValue($startdate);
     }
+
+    /**
+     * Returns whether this course format allows the activity to
+     * have "triple visibility state" - visible always, hidden on course page but available, hidden.
+     *
+     * @param stdClass|cm_info $cm course module (may be null if we are displaying a form for adding a module)
+     * @param stdClass|section_info $section section where this module is located or will be added to
+     * @return bool
+     */
+    public function allow_stealth_module_visibility($cm, $section) {
+        return false;
+    }
+
+    /**
+     * Callback used in WS core_course_edit_section when teacher performs an AJAX action on a section (show/hide)
+     *
+     * Access to the course is already validated in the WS but the callback has to make sure
+     * that particular action is allowed by checking capabilities
+     *
+     * Course formats should register
+     *
+     * @param stdClass|section_info $section
+     * @param string $action
+     * @param int $sr
+     * @return null|array|stdClass any data for the Javascript post-processor (must be json-encodeable)
+     */
+    public function section_action($section, $action, $sr) {
+        global $PAGE;
+        if (!$this->uses_sections() || !$section->section) {
+            // No section actions are allowed if course format does not support sections.
+            // No actions are allowed on the 0-section by default (overwrite in course format if needed).
+            throw new moodle_exception('sectionactionnotsupported', 'core', null, s($action));
+        }
+
+        $course = $this->get_course();
+        $coursecontext = context_course::instance($course->id);
+        switch($action) {
+            case 'hide':
+            case 'show':
+                require_capability('moodle/course:sectionvisibility', $coursecontext);
+                $visible = ($action === 'hide') ? 0 : 1;
+                course_update_section($course, $section, array('visible' => $visible));
+                break;
+            default:
+                throw new moodle_exception('sectionactionnotsupported', 'core', null, s($action));
+        }
+
+        $modules = [];
+
+        $modinfo = get_fast_modinfo($course);
+        $coursesections = $modinfo->sections;
+        if (array_key_exists($section->section, $coursesections)) {
+            $courserenderer = $PAGE->get_renderer('core', 'course');
+            $completioninfo = new completion_info($course);
+            foreach ($coursesections[$section->section] as $cmid) {
+                $cm = $modinfo->get_cm($cmid);
+                $modules[] = $courserenderer->course_section_cm_list_item($course, $completioninfo, $cm, $sr);
+            }
+        }
+
+        return ['modules' => $modules];
+    }
+
+    /**
+     * Return the plugin config settings for external functions,
+     * in some cases the configs will need formatting or be returned only if the current user has some capabilities enabled.
+     *
+     * @return array the list of configs
+     * @since Moodle 3.5
+     */
+    public function get_config_for_external() {
+        return array();
+    }
 }
 
 /**
@@ -1232,5 +1386,17 @@ class format_site extends format_base {
             );
         }
         return $courseformatoptions;
+    }
+
+    /**
+     * Returns whether this course format allows the activity to
+     * have "triple visibility state" - visible always, hidden on course page but available, hidden.
+     *
+     * @param stdClass|cm_info $cm course module (may be null if we are displaying a form for adding a module)
+     * @param stdClass|section_info $section section where this module is located or will be added to
+     * @return bool
+     */
+    public function allow_stealth_module_visibility($cm, $section) {
+        return true;
     }
 }

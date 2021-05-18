@@ -1071,11 +1071,15 @@ class qtype_calculated extends question_type {
         $comment->outsidelimit = false;
         $comment->answers = array();
         // Find a default unit.
-        if (!empty($questionid) && $unit = $DB->get_record('question_numerical_units',
-                array('question' => $questionid, 'multiplier' => 1.0))) {
-            $unit = $unit->unit;
-        } else {
-            $unit = '';
+        $unit = '';
+        if (!empty($questionid)) {
+            $units = $DB->get_records('question_numerical_units',
+                array('question' => $questionid, 'multiplier' => 1.0),
+                'id ASC', '*', 0, 1);
+            if ($units) {
+                $unit = reset($units);
+                $unit = $unit->unit;
+            }
         }
 
         $answers = fullclone($answers);
@@ -1780,17 +1784,6 @@ class qtype_calculated extends question_type {
             $text .= get_string('nosharedwildcard', 'qtype_calculated');
         }
         return $text;
-    }
-
-    public function find_math_equations($text) {
-        // Returns the possible dataset names found in the text as an array.
-        // The array has the dataset name for both key and value.
-        $equations = array();
-        while (preg_match('~\{=([^[:space:]}]*)}~', $text, $regs)) {
-            $equations[] = $regs[1];
-            $text = str_replace($regs[0], '', $text);
-        }
-        return $equations;
     }
 
     public function get_virtual_qtype() {

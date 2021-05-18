@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2016120500;
-$plugin->requires  = 2016112900;
+$plugin->version   = 2018120300;
+$plugin->requires  = 2018112800;
 $plugin->component = 'block_lp';
 $plugin->dependencies = array(
     'tool_lp' => ANY_VERSION

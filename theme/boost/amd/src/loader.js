@@ -27,8 +27,11 @@ define(['jquery', './tether', 'core/event'], function(jQuery, Tether, Event) {
 
     window.jQuery = jQuery;
     window.Tether = Tether;
+    M.util.js_pending('theme_boost/loader:children');
 
-    require(['theme_boost/util',
+    require(['theme_boost/aria',
+            'theme_boost/pending',
+            'theme_boost/util',
             'theme_boost/alert',
             'theme_boost/button',
             'theme_boost/carousel',
@@ -39,11 +42,21 @@ define(['jquery', './tether', 'core/event'], function(jQuery, Tether, Event) {
             'theme_boost/tab',
             'theme_boost/tooltip',
             'theme_boost/popover'],
-            function() {
+            function(Aria) {
 
+        // We do twice because: https://github.com/twbs/bootstrap/issues/10547
         jQuery('body').popover({
-            selector: '[data-toggle="popover"]',
-            trigger: 'focus'
+            trigger: 'focus',
+            selector: "[data-toggle=popover][data-trigger!=hover]"
+        });
+
+        jQuery("html").popover({
+            container: "body",
+            selector: "[data-toggle=popover][data-trigger=hover]",
+            trigger: "hover",
+            delay: {
+                hide: 500
+            }
         });
 
         // We need to call popover automatically if nodes are added to the page later.
@@ -53,8 +66,12 @@ define(['jquery', './tether', 'core/event'], function(jQuery, Tether, Event) {
                     selector: '[data-toggle="popover"]',
                     trigger: 'focus'
                 });
+
             });
         });
+
+        Aria.init();
+        M.util.js_complete('theme_boost/loader:children');
     });
 
 

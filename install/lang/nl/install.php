@@ -80,15 +80,15 @@ $string['pathsunsecuredataroot'] = 'De plaats van de datamap is niet veilig.';
 $string['pathswrongadmindir'] = 'De adminmap bestaat niet';
 $string['phpextension'] = '{$a} PHP-extentie';
 $string['phpversion'] = 'PHP-versie';
-$string['phpversionhelp'] = '<p>Moodle vereist minstens PHP-versie 5.6.5 of 7.1 (7.0.x kent enige beperkingen).</p>
-<p>De huidige versie op je server is {$a}.</p>
-<p>Je moet PHP upgraden of verhuizen naar een host met een nieuwere versie van PHP.</p>';
+$string['phpversionhelp'] = '<p>Moodle heeft minstens PHP-versie 5.6.5 of 7.1 nodig (7.0.x heeft een aantal beperkingen).</p>
+<p>De huidige versie op je server is {$a}</p>
+<p>Je moet PHP upgraden of verhuizen naar een host met een nieuwere versie van PHP.<br />';
 $string['welcomep10'] = '{$a->installername} ({$a->installerversion})';
 $string['welcomep20'] = 'Je krijgt deze pagina te zien omdat je met succes het <strong>{$a->packname} {$a->packversion}</strong> packet op je computer gezet en gestart hebt. Proficiat!';
 $string['welcomep30'] = 'Deze uitgave van <strong>{$a->installername}</strong> bevat de software die nodig is om een omgeving te creëren waarin <strong>Moodle</strong> zal werken, namelijk:';
 $string['welcomep40'] = 'Dit pakket bevat ook <strong>Moodle {$a->moodlerelease} ({$a->moodleversion})</strong>.';
 $string['welcomep50'] = 'Het gebruik van alle programma\'s in dit pakket wordt geregeld door hun respectievelijke licenties. Het complete <strong>{$a->installername}</strong> pakket is
-<a href="http://www.opensource.org/docs/definition_plain.html">open source</a> en wordt verdeeld onder de <a href="http://www.gnu.org/copyleft/gpl.html">GPL</a> licentie.';
+<a href="https://www.opensource.org/docs/definition_plain.html">open source</a> en wordt verdeeld onder de <a href="https://www.gnu.org/copyleft/gpl.html">GPL</a> licentie.';
 $string['welcomep60'] = 'De volgende pagina\'s leiden je door een aantal makkelijk te volgen stappen om <strong>Moodle</strong> te installeren op je computer. Je kunt de standaardinstellingen overnemen of, optioneel, ze aanpassen aan je noden.';
 $string['welcomep70'] = 'Klik op de "volgende"-knop om verder te gaan met de installatie van <strong>Moodle</strong>';
 $string['wwwroot'] = 'Web adres';

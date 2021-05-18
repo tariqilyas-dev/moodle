@@ -59,6 +59,7 @@ function report_security_get_issue_list() {
         'report_security_check_guestrole',
         'report_security_check_frontpagerole',
         'report_security_check_webcron',
+        'report_security_check_preventexecpath',
 
     );
 }
@@ -465,7 +466,7 @@ function report_security_check_riskxss($detailed=false) {
 
     $params = array('capallow'=>CAP_ALLOW);
 
-    $sqlfrom = "FROM (SELECT rcx.*
+    $sqlfrom = "FROM (SELECT DISTINCT rcx.contextid, rcx.roleid
                        FROM {role_capabilities} rcx
                        JOIN {capabilities} cap ON (cap.name = rcx.capability AND ".$DB->sql_bitand('cap.riskbitmask', RISK_XSS)." <> 0)
                        WHERE rcx.permission = :capallow) rc,
@@ -656,7 +657,7 @@ function report_security_check_frontpagerole($detailed=false) {
 
     if ($riskycount or !$legacyok) {
         $result->status  = REPORT_SECURITY_CRITICAL;
-        $result->info    = get_string('check_frontpagerole_error', 'report_security', format_string($frontpage_role->name));
+        $result->info    = get_string('check_frontpagerole_error', 'report_security', role_get_name($frontpage_role));
 
     } else {
         $result->status  = REPORT_SECURITY_OK;
@@ -754,7 +755,7 @@ function report_security_check_riskbackup($detailed=false) {
     $params = array('capability'=>'moodle/backup:userinfo', 'permission'=>CAP_ALLOW, 'context1'=>CONTEXT_COURSE, 'context2'=>CONTEXT_COURSE);
 
     $sqluserinfo = "
-        FROM (SELECT rcx.*
+        FROM (SELECT DISTINCT rcx.contextid, rcx.roleid
                 FROM {role_capabilities} rcx
                WHERE rcx.permission = :permission AND rcx.capability = :capability) rc,
              {context} c,
@@ -827,6 +828,7 @@ function report_security_check_riskbackup($detailed=false) {
                                'contextname'=>$context->get_context_name());
             $users[] = '<li>'.get_string('check_riskbackup_unassign', 'report_security', $a).'</li>';
         }
+        $rs->close();
         if (!empty($users)) {
             $users = '<ul>'.implode('', $users).'</ul>';
             $result->details .= get_string('check_riskbackup_details_users', 'report_security', $users);
@@ -865,6 +867,35 @@ function report_security_check_webcron($detailed = false) {
 
     if ($detailed) {
         $result->details = get_string('check_webcron_details', 'report_security');
+    }
+
+    return $result;
+}
+
+/**
+ * Verifies the status of preventexecpath
+ *
+ * @param bool $detailed
+ * @return object result
+ */
+function report_security_check_preventexecpath($detailed = false) {
+    global $CFG;
+
+    $result = new stdClass();
+    $result->issue   = 'report_security_check_preventexecpath';
+    $result->name    = get_string('check_preventexecpath_name', 'report_security');
+    $result->details = null;
+    $result->link    = null;
+
+    if (empty($CFG->preventexecpath)) {
+        $result->status = REPORT_SECURITY_WARNING;
+        $result->info   = get_string('check_preventexecpath_warning', 'report_security');
+        if ($detailed) {
+            $result->details = get_string('check_preventexecpath_details', 'report_security');
+        }
+    } else {
+        $result->status = REPORT_SECURITY_OK;
+        $result->info   = get_string('check_preventexecpath_ok', 'report_security');
     }
 
     return $result;

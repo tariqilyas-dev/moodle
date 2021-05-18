@@ -26,7 +26,9 @@ $string['about'] = 'About';
 $string['aboutus'] = 'About Us';
 $string['address'] = 'Address';
 $string['calendar'] = 'Calendar';
-$string['choosereadme'] = '<div class="clearfix"><div class="theme_screenshot"><img class=img-polaroid src="klass/pix/screenshot.jpg" /><h3>Theme Credits</h3><p><h3>Moodle Klass theme</h3><p>This theme is based on the Bootstrapbase Moodle theme.</p><p><a href="http://getbootstrap.com">http://getbootstrap.com</a></p><p>Authors: LMSACE Dev Team<br>Contact: info@lmsace.com<br>Website: <a href="http://www.lmsace.com">www.lmsace.com</a><br></p>';
+
+$string['choosereadme'] = '<div class="clearfix"><div class="theme_screenshot"><img class=img-polaroid src="klass/pix/screenshot.jpg" /><br/><p></p><h3>Theme Credits</h3><p><h3>Moodle Klass theme</h3><p>This theme is based on the Boost Moodle theme.</p><p>Authors: LMSACE Dev Team<br>Contact: info@lmsace.com<br>Website: <a href="http://www.lmsace.com">www.lmsace.com</a><br></p>';
+
 $string['configtitle'] = 'Klass';
 $string['connectus'] = 'Connect with us';
 $string['contact'] = 'Contact';
@@ -74,14 +76,12 @@ Moodle free support|https://moodle.org/support
 Moodle Docs|http://docs.moodle.org|Moodle Docs
 Moodle.com|http://moodle.com/';
 $string['infolink_desc'] = 'You can configure a custom Info Links here to be shown by themes. Each line consists of some menu text, a link URL (optional), a tooltip title (optional) and a language code or comma-separated list of codes (optional, for displaying the line to users of the specified language only), separated by pipe characters.For example:
-<pre>
-Moodle community|https://moodle.org
+<pre> Moodle community|https://moodle.org
 Moodle free support|https://moodle.org/support
 Moodle development|https://moodle.org/development
 Moodle Docs|http://docs.moodle.org|Moodle Docs
 German Moodle Docs|http://docs.moodle.org/de|Documentation in German|de
-Moodle.com|http://moodle.com/
-</pre>';
+Moodle.com|http://moodle.com/ </pre>';
 $string['logo'] = 'Logo';
 $string['logodesc'] = 'Please upload your custom logo here if you want to add it to the header. <br>The image should be 50px high and any reasonable width (minimum:235px) that suits.';
 $string['newcourses'] = 'New courses';
@@ -103,6 +103,7 @@ $string['pluginname'] = 'Klass';
 $string['readmore'] = 'Read More';
 $string['region-side-post'] = 'Right';
 $string['region-side-pre'] = 'Left';
+$string['knowmore'] = 'Know More';
 $string['sb1_default_cnt'] = '<p>Lorem Ipsum is simply dummy text of <br class="visible-lg">the printing and typesetting industry.</p>';
 $string['sb1_default_title'] = 'Learn Online Courses';
 $string['sb2_default_cnt'] = '<p>Lorem Ipsum is simply dummy text of <br class="visible-lg">the printing and typesetting industry.</p>';
@@ -144,6 +145,13 @@ $string['slidecapcolordesc'] = 'What colour the slide caption text should be.';
 $string['slidecaption'] = 'Slide caption';
 $string['slidecaptiondefault'] = 'Bootstrap Based Slider - {$a->slideno}';
 $string['slidecaptiondesc'] = 'Enter the caption text to use for the slide';
+$string['slidebuttonurl'] = 'Slide button link';
+$string['slidebuttonurldesc'] = 'Enter the target destination of the slide\'s image button link';
+
+$string['slidebutton'] = 'Slider button';
+$string['slidebuttondesc'] = 'Enter the target destination of the slide\'s image button text,
+either language key or Text.For ex: lang:display or Display';
+
 $string['slideimage'] = 'Slide image';
 $string['slideimagedesc'] = 'The image should be 1366px X 385px.';
 $string['slidedescbgcolor'] = 'Slide Description Background colour';

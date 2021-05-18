@@ -48,11 +48,11 @@ class big_search_form implements renderable, templatable {
     public $fullwords;
     public $notwords;
     public $phrase;
-    public $scripturl;
     public $showfullwords;
     public $subject;
     public $user;
     public $words;
+    public $tags;
     /** @var string The URL of the search form. */
     public $actionurl;
 
@@ -65,7 +65,7 @@ class big_search_form implements renderable, templatable {
     public function __construct($course) {
         global $DB;
         $this->course = $course;
-        $this->scripturl = new moodle_url('/mod/forum/forum.js');
+        $this->tags = [];
         $this->showfullwords = $DB->get_dbfamily() == 'mysql' || $DB->get_dbfamily() == 'postgres';
         $this->actionurl = new moodle_url('/mod/forum/search.php');
 
@@ -151,6 +151,15 @@ class big_search_form implements renderable, templatable {
     }
 
     /**
+     * Set tags.
+     *
+     * @param mixed $value Tags.
+     */
+    public function set_tags($value) {
+        $this->tags = $value;
+    }
+
+    /**
      * Forum ID setter search criteria.
      *
      * @param int $forumid The forum ID.
@@ -160,9 +169,9 @@ class big_search_form implements renderable, templatable {
     }
 
     public function export_for_template(renderer_base $output) {
+        global $DB, $CFG, $PAGE;
         $data = new stdClass();
 
-        $data->scripturl = $this->scripturl->out(false);
         $data->courseid = $this->course->id;
         $data->words = $this->words;
         $data->phrase = $this->phrase;
@@ -175,6 +184,26 @@ class big_search_form implements renderable, templatable {
         $data->showfullwords = $this->showfullwords;
         $data->actionurl = $this->actionurl->out(false);
 
+        $tagtypestoshow = \core_tag_area::get_showstandard('mod_forum', 'forum_posts');
+        $showstandard = ($tagtypestoshow != \core_tag_tag::HIDE_STANDARD);
+        $typenewtags = ($tagtypestoshow != \core_tag_tag::STANDARD_ONLY);
+
+        $PAGE->requires->js_call_amd('core/form-autocomplete', 'enhance', $params = array('#tags', $typenewtags, '',
+                              get_string('entertags', 'tag'), false, $showstandard, get_string('noselection', 'form')));
+
+        $data->tagsenabled = \core_tag_tag::is_enabled('mod_forum', 'forum_posts');
+        $namefield = empty($CFG->keeptagnamecase) ? 'name' : 'rawname';
+        $tags = $DB->get_records('tag',
+            array('isstandard' => 1, 'tagcollid' => \core_tag_area::get_collection('mod_forum', 'forum_posts')),
+            $namefield, 'rawname,' . $namefield . ' as fieldname');
+        $data->tags = [];
+        foreach ($tags as $tag) {
+            $data->tagoptions[] = ['value'    => $tag->rawname,
+                                   'text'     => $tag->fieldname,
+                                   'selected' => in_array($tag->rawname, $this->tags)
+            ];
+        }
+
         $datefrom = $this->datefrom;
         if (empty($datefrom)) {
             $datefrom = make_timestamp(2000, 1, 1, 0, 0, 0);
@@ -185,17 +214,19 @@ class big_search_form implements renderable, templatable {
             $dateto = time() + HOURSECS;
         }
 
-        $data->datefromfields = html_writer::select_time('days', 'fromday', $datefrom)
-                              . html_writer::select_time('months', 'frommonth', $datefrom)
-                              . html_writer::select_time('years', 'fromyear', $datefrom)
-                              . html_writer::select_time('hours', 'fromhour', $datefrom)
-                              . html_writer::select_time('minutes', 'fromminute', $datefrom);
+        $data->datefromfields = html_writer::div(html_writer::select_time('days', 'fromday', $datefrom), 'form-group fitem ml-2')
+                              . html_writer::div(html_writer::select_time('months', 'frommonth', $datefrom),
+                           'form-group fitem ml-2')
+                              . html_writer::div(html_writer::select_time('years', 'fromyear', $datefrom), 'form-group fitem ml-2')
+                              . html_writer::div(html_writer::select_time('hours', 'fromhour', $datefrom), 'form-group fitem ml-2')
+                              . html_writer::div(html_writer::select_time('minutes', 'fromminute', $datefrom),
+                           'form-group fitem ml-2');
 
-        $data->datetofields = html_writer::select_time('days', 'today', $dateto)
-                            . html_writer::select_time('months', 'tomonth', $dateto)
-                            . html_writer::select_time('years', 'toyear', $dateto)
-                            . html_writer::select_time('hours', 'tohour', $dateto)
-                            . html_writer::select_time('minutes', 'tominute', $dateto);
+        $data->datetofields = html_writer::div(html_writer::select_time('days', 'today', $dateto), 'form-group fitem ml-2')
+                            . html_writer::div(html_writer::select_time('months', 'tomonth', $dateto), 'form-group fitem ml-2')
+                            . html_writer::div(html_writer::select_time('years', 'toyear', $dateto), 'form-group fitem ml-2')
+                            . html_writer::div(html_writer::select_time('hours', 'tohour', $dateto), 'form-group fitem ml-2')
+                            . html_writer::div(html_writer::select_time('minutes', 'tominute', $dateto), 'form-group fitem ml-2');
 
         if ($this->forumid && !empty($this->forumoptions)) {
             foreach ($this->forumoptions as $index => $option) {

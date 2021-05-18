@@ -15,10 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * config.php
+ *
  * @package    theme_klass
  * @copyright  2015 LMSACE Dev Team , lmsace.com
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- *
  */
 defined('MOODLE_INTERNAL') || die;
 
@@ -28,7 +29,9 @@ $THEME->doctype = 'html5';
 
 $THEME->parents = array('boost');
 
-$THEME->sheets = array('font-awesome.min');
+$THEME->sheets = [];
+
+$THEME->javascripts_footer = array('theme');
 
 $THEME->supportscssoptimisation = false;
 

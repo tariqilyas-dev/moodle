@@ -40,7 +40,7 @@ class behat_theme_boost_behat_navigation extends behat_navigation {
 
         if ($this->running_javascript()) {
             // The user menu must be expanded when JS is enabled.
-            $xpath = "//div[@class='usermenu']//a[contains(concat(' ', @class, ' '), ' dropdown-toggle ')]";
+            $xpath = "//div[contains(concat(' ', @class, ' '),  ' usermenu ')]//a[contains(concat(' ', @class, ' '), ' dropdown-toggle ')]";
             $this->execute("behat_general::i_click_on", array($this->escape($xpath), "xpath_element"));
         }
 
@@ -65,12 +65,12 @@ class behat_theme_boost_behat_navigation extends behat_navigation {
             "/li[contains(concat(' ', normalize-space(@class), ' '), ' contains_branch ')]" .
             "/ul/li[contains(concat(' ', normalize-space(@class), ' '), ' contains_branch ')]" .
             "[p[contains(concat(' ', normalize-space(@class), ' '), ' branch ')]" .
-            "/*[normalize-space(.)=" . $nodetextliteral ."]]" .
+            "/*[contains(normalize-space(.), " . $nodetextliteral .")]]" .
             "|" .
             "//div[contains(concat(' ', normalize-space(@class), ' '), ' card-text ')]/div" .
             "/ul[contains(concat(' ', normalize-space(@class), ' '), ' block_tree ')]" .
             "/li[p[contains(concat(' ', normalize-space(@class), ' '), ' branch ')]" .
-            "/*[normalize-space(.)=" . $nodetextliteral ."]]";
+            "/*[contains(normalize-space(.), " . $nodetextliteral .")]]";
 
         $node = $this->find('xpath', $xpath, $exception);
 
@@ -154,7 +154,7 @@ class behat_theme_boost_behat_navigation extends behat_navigation {
         // Check if there is a separate tab for this submenu of the page. If found go to it.
         if ($parentnodes) {
             $tabname = behat_context_helper::escape($parentnodes[0]);
-            $tabxpath = '//ul[@role=\'tablist\']/li/a[normalize-space(.)=' . $tabname . ']';
+            $tabxpath = '//ul[@role=\'tablist\']/li/a[contains(normalize-space(.), ' . $tabname . ')]';
             if ($node = $this->getSession()->getPage()->find('xpath', $tabxpath)) {
                 if ($this->running_javascript()) {
                     // Click on the tab and add 'active' tab to the xpath.
@@ -178,7 +178,7 @@ class behat_theme_boost_behat_navigation extends behat_navigation {
 
         // Find a link and click on it.
         $linkname = behat_context_helper::escape($lastnode);
-        $xpath .= '//a[normalize-space(.)=' . $linkname . ']';
+        $xpath .= '//a[contains(normalize-space(.), ' . $linkname . ')]';
         if (!$node = $this->getSession()->getPage()->find('xpath', $xpath)) {
             throw new ElementNotFoundException($this->getSession(), 'Link "' . join(' > ', $nodelist) . '"" not found on the page');
         }
@@ -258,7 +258,7 @@ class behat_theme_boost_behat_navigation extends behat_navigation {
         if (!$isheader || count($nodelist) == 1) {
             $lastnode = end($nodelist);
             $linkname = behat_context_helper::escape($lastnode);
-            $link = $this->getSession()->getPage()->find('xpath', $menuxpath . '//a[normalize-space(.)=' . $linkname . ']');
+            $link = $this->getSession()->getPage()->find('xpath', $menuxpath . '//a[contains(normalize-space(.), ' . $linkname . ')]');
             if ($link) {
                 $link->click();
                 $this->wait_for_pending_js();
@@ -269,7 +269,7 @@ class behat_theme_boost_behat_navigation extends behat_navigation {
         if ($isheader) {
             // Course administration and Front page administration will have subnodes under "More...".
             $linkname = behat_context_helper::escape(get_string('morenavigationlinks'));
-            $link = $this->getSession()->getPage()->find('xpath', $menuxpath . '//a[normalize-space(.)=' . $linkname . ']');
+            $link = $this->getSession()->getPage()->find('xpath', $menuxpath . '//a[contains(normalize-space(.), ' . $linkname . ')]');
             if ($link) {
                 $link->click();
                 $this->execute('behat_general::wait_until_the_page_is_ready');
@@ -308,36 +308,6 @@ class behat_theme_boost_behat_navigation extends behat_navigation {
         $this->toggle_page_administration_menu($menuxpath);
         $this->execute('behat_general::should_not_exist_in_the', [$nodetext, $selectortype, $menuxpath, 'xpath_element']);
         $this->toggle_page_administration_menu($menuxpath);
-    }
-
-    public function i_navigate_to_node_in($nodetext, $parentnodes) {
-        $parentnodes = array_map('trim', explode('>', $parentnodes));
-        $nodelist = array_merge($parentnodes, [$nodetext]);
-        $firstnode = array_shift($nodelist);
-
-        if ($firstnode === get_string('administrationsite')) {
-            $this->i_select_from_flat_navigation_drawer(get_string('administrationsite'));
-            $this->select_on_administration_page($nodelist);
-            return;
-        }
-
-        if ($firstnode === get_string('sitepages')) {
-            if ($nodetext === get_string('calendar', 'calendar')) {
-                $this->i_select_from_flat_navigation_drawer($nodetext);
-            } else {
-                // TODO MDL-57120 other links under "Site pages" are not accessible without navigation block.
-                $this->select_node_in_navigation($nodetext, $parentnodes);
-            }
-            return;
-        }
-
-        if ($firstnode === get_string('courseadministration')) {
-            // Administration menu is available only on the main course page where settings in Administration
-            // block (original purpose of the step) are available on every course page.
-            $this->go_to_main_course_page();
-        }
-
-        $this->select_from_administration_menu($nodelist);
     }
 
     public function i_navigate_to_in_current_page_administration($nodetext) {

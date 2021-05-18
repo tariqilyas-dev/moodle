@@ -1,12 +1,12 @@
 @mod @mod_lti
-Feature: Content-Item support
+Feature: Create/edit tool configuration that has Content-Item support
   In order to provide external tools that support the Content-Item Message type for teachers and learners
   As an admin
   I need to be able to configure external tool registrations that support the Content-Item Message type.
 
   Background:
     Given I log in as "admin"
-    And I navigate to "Manage tools" node in "Site administration > Plugins > Activity modules > External tool"
+    And I navigate to "Plugins > Activity modules > External tool > Manage tools" in site administration
 
   Scenario: Verifying ContentItemSelectionRequest selection support in external tool registration
     When I follow "Manage external tool registrations"

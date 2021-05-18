@@ -43,7 +43,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_quizzes_by_courses.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_quizzes_by_courses_parameters() {
@@ -105,8 +105,9 @@ class mod_quiz_external extends external_api {
 
                 if (has_capability('mod/quiz:view', $context)) {
                     // Format intro.
-                    list($quizdetails['intro'], $quizdetails['introformat']) = external_format_text($quiz->intro,
-                                                                    $quiz->introformat, $context->id, 'mod_quiz', 'intro', null);
+                    $options = array('noclean' => true);
+                    list($quizdetails['intro'], $quizdetails['introformat']) =
+                        external_format_text($quiz->intro, $quiz->introformat, $context->id, 'mod_quiz', 'intro', null, $options);
 
                     $quizdetails['introfiles'] = external_util::get_area_files($context->id, 'mod_quiz', 'intro', false, false);
                     $viewablefields = array('timeopen', 'timeclose', 'grademethod', 'section', 'visible', 'groupmode',
@@ -300,7 +301,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for view_quiz.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function view_quiz_parameters() {
@@ -354,7 +355,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_user_attempts.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_user_attempts_parameters() {
@@ -473,7 +474,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_user_best_grade.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_user_best_grade_parameters() {
@@ -551,7 +552,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_combined_review_options.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_combined_review_options_parameters() {
@@ -652,7 +653,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for start_attempt.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function start_attempt_parameters() {
@@ -888,7 +889,7 @@ class mod_quiz_external extends external_api {
                     VALUE_OPTIONAL),
                 'status' => new external_value(PARAM_RAW, 'current formatted state of the question', VALUE_OPTIONAL),
                 'blockedbyprevious' => new external_value(PARAM_BOOL, 'whether the question is blocked by the previous question',
-                        VALUE_OPTIONAL),
+                    VALUE_OPTIONAL),
                 'mark' => new external_value(PARAM_RAW, 'the mark awarded.
                     It will be returned only if the user is allowed to see it.', VALUE_OPTIONAL),
                 'maxmark' => new external_value(PARAM_FLOAT, 'the maximum mark possible for this question attempt.
@@ -951,7 +952,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_attempt_data.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_attempt_data_parameters() {
@@ -1034,7 +1035,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_attempt_summary.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_attempt_summary_parameters() {
@@ -1098,7 +1099,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for save_attempt.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function save_attempt_parameters() {
@@ -1185,7 +1186,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for process_attempt.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function process_attempt_parameters() {
@@ -1240,8 +1241,11 @@ class mod_quiz_external extends external_api {
         );
         $params = self::validate_parameters(self::process_attempt_parameters(), $params);
 
-        // Do not check access manager rules.
-        list($attemptobj, $messages) = self::validate_attempt($params, false);
+        // Do not check access manager rules and evaluate fail if overdue.
+        $attemptobj = quiz_attempt::create($params['attemptid']);
+        $failifoverdue = !($attemptobj->get_quizobj()->get_quiz()->overduehandling == 'graceperiod');
+
+        list($attemptobj, $messages) = self::validate_attempt($params, false, $failifoverdue);
 
         // Create the $_POST object required by the question engine.
         $_POST = array();
@@ -1296,7 +1300,8 @@ class mod_quiz_external extends external_api {
             if (!$attemptobj->is_finished()) {
                 throw new moodle_quiz_exception($attemptobj->get_quizobj(), 'attemptclosed');
             } else if (!$displayoptions->attempt) {
-                throw new moodle_exception($attemptobj->cannot_review_message());
+                throw new moodle_quiz_exception($attemptobj->get_quizobj(), 'noreview', null, '',
+                    $attemptobj->cannot_review_message());
             }
         } else if (!$attemptobj->is_review_allowed()) {
             throw new moodle_quiz_exception($attemptobj->get_quizobj(), 'noreviewattempt');
@@ -1307,7 +1312,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_attempt_review.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_attempt_review_parameters() {
@@ -1412,7 +1417,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for view_attempt.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function view_attempt_parameters() {
@@ -1485,7 +1490,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for view_attempt_summary.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function view_attempt_summary_parameters() {
@@ -1550,7 +1555,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for view_attempt_review.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function view_attempt_review_parameters() {
@@ -1605,7 +1610,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for view_quiz.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_quiz_feedback_for_grade_parameters() {
@@ -1678,7 +1683,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_quiz_access_information.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_quiz_access_information_parameters() {
@@ -1760,7 +1765,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_attempt_access_information.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_attempt_access_information_parameters() {
@@ -1867,7 +1872,7 @@ class mod_quiz_external extends external_api {
     /**
      * Describes the parameters for get_quiz_required_qtypes.
      *
-     * @return external_external_function_parameters
+     * @return external_function_parameters
      * @since Moodle 3.1
      */
     public static function get_quiz_required_qtypes_parameters() {
