@@ -1,0 +1,59 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_quiz_type/showquiz
+
+
+    Example context (json):
+    {
+
+    }
+}}
+<h1>List of quiz with questions</h1>
+
+
+  <table id="example" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th><h4><b><center>quiz id</center></b></h4></th>
+        <th><h4><b><center>quizname</center></b></h4></th>
+        <th><h4><b><center>question</center></b></h4></th>
+        <th><h4><b><center>option1</center></b></h4></th>
+        <th><h4><b><center>option2</center></b></h4></th>
+        <th><h4><b><center>option3</center></b></h4></th>
+        <th><h4><b><center>option4</center></b></h4></th>
+        <th><h4><b><center>trueoption</center></b></h4></th>
+       </tr>
+    </thead>
+{{#quiz}}
+    <tbody>
+    <tr>
+        <td><center>{{id}}</center></td>
+        <td><center>{{quizname}}</center></td>
+        <td><center>{{question}}</center></td>
+        <td><center>{{option1}}</center></td>
+        <td><center>{{option2}}</center></td>
+        <td><center>{{option3}}</center></td>
+        <td><center>{{option4}}</center></td>
+        <td><center>{{trueoption}}</center></td>
+    </tr>
+    </tbody>
+{{/quiz}}
+</table>
+
+<hr>
+<input type="button" class="btn btn-primary" value="Add quiz" onclick="location.href='{{editurl}}'">
