@@ -24,25 +24,33 @@ require_once(__DIR__ . '/../../config.php');
 
 global $DB;
 
-$PAGE->set_url(new moodle_url('/local/file_reader/get_file.php'));
+$PAGE->set_url(new moodle_url('/local/file_reader/search_file.php'));
 $PAGE->set_context(\context_system::instance());
 $PAGE->set_title('File Reader');
 
-$pagedata = $DB->get_records('page');
 
 echo $OUTPUT->header();
 
-foreach ($pagedata as $data) {
-}
 
-// echo $data->id; 
-// echo $data->course; exit;
+
+$url = 'http://still-oasis-17398.herokuapp.com/home/pdf_search.json';
+$key = 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH';
+$data = array("key" => $key);
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+curl_setopt($ch, CURLOPT_POSTFIELDS,http_build_query($data));
+
+$response = curl_exec($ch);
+print_r($response);
+curl_close($ch);
+
 
 $templatecontext = (object)[
-	'messages' => array_values($messages),
     'deleteurl' => new moodle_url('/local/file_reader/delete_file.php'),
 ];
 
-echo $OUTPUT->render_from_template('local_file_reader/get_file', $templatecontext);
+
+echo $OUTPUT->render_from_template('local_file_reader/search_file', $templatecontext);
 
 echo $OUTPUT->footer();
