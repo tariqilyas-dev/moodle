@@ -174,4 +174,36 @@ if (!empty($results)) {
 
 }
 
+
+$url = 'http://still-oasis-17398.herokuapp.com/home/pdf_search.json';
+$key = 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH';
+$data = array("key" => $key);
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
+curl_setopt($ch, CURLOPT_POSTFIELDS,http_build_query($data));
+
+$response = curl_exec($ch);
+// print_r($response);
+curl_close($ch);
+
+$responseArr = json_decode($response, true);
+
+$templatecontext = (object)[
+    'searchdata' => array_values($responseArr),
+    // 'description' => substr(array_values($responseArr['description']),0,260),
+];
+
+echo $OUTPUT->render_from_template('search/index', $templatecontext);
+
+
+// print_r($responseArr);
+// for($i= 0; $i< count($responseArr['data']); $i++){
+//     echo $responseArr['data'][$i]['description'];
+// }
+
 echo $OUTPUT->footer();
+
+
+
+
