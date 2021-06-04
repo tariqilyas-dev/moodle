@@ -1,0 +1,91 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template local_message/manage
+
+
+    Example context (json):
+    {
+
+    }
+}}
+
+<table id="example" class="display" style="width:100%">
+    <thead>
+      <tr>
+        <th><h4><b><center>PDF</center></b></h4></th>
+        <th><h4><b><center>Delete</center></b></h4></th>
+       </tr>
+    </thead>
+
+    <tbody>
+
+    <tr>
+        <td><center><div class='row'><iframe src='https://still-oasis-17398.herokuapp.com/system/uploads/files/000/000/118/original/Get_Started_With_Smallpdf.pdf?1622785253' data-uploadid='118' style='width:100%;height:100%;'></iframe></div></center></td>
+        <td><center><input type="button" class="btn btn-primary" value="Delete File" onclick="location.href='{{deleteurl1}}'"></center></td>
+    </tr>
+
+     <tr>
+        <td><center><div class = 'row'> <iframe src = 'https: //still-oasis-17398.herokuapp.com/system/uploads/files/000/000/076/original/Get_Started_With_Smallpdf.pdf? 1622025695' data-uploadid = '76 'style =' width: 100%; height: 100%; '> </iframe> </div></center></td>
+        <td><center><input type="button" class="btn btn-primary" value="Delete File" onclick="location.href='{{deleteurl2}}'"></center></td>
+    </tr>
+
+    <tr>
+        <td><center><div class='row'><iframe src='https://still-oasis-17398.herokuapp.com/system/uploads/files/000/000/115/original/file-sample_150kB.pdf?1622720786' data-uploadid='115' style='width:100%;height:100%;'></iframe></div></center></td>
+        <td><center><input type="button" class="btn btn-primary" id="115" value="delete file" onClick="reply_click(this.id)"></center></td>
+    </tr>
+
+    <tr>
+        <td><center><div class='row'><iframe src='https://still-oasis-17398.herokuapp.com/system/uploads/files/000/000/116/original/Get_Started_With_Smallpdf.pdf?1622720836' data-uploadid='116' style='width:100%;height:100%;'></iframe></div></center></td>
+        <td><center><input type="button" class="btn btn-primary" id="116" value="delete file" onClick="reply_click(this.id)"></center></td>
+    </tr>
+
+    </tbody>
+
+</table>
+
+<hr>
+
+
+<script type="text/javascript">
+function reply_click(clicked_id)
+  {
+    
+    var id = clicked_id;
+
+    const options = {
+    method: 'DELETE',
+    uri: 'http://still-oasis-17398.herokuapp.com/uploads/id.json', // whatever the endpoint
+    body: {
+        key: muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH
+    },
+    json: true // Automatically stringifies the body to JSON
+};
+
+
+request(options)
+.then((parsedBody) => {
+    alert("Delete successfully");
+})
+.catch((err) => {
+    alert("Unable to delete");
+});
+
+}
+
+</script>
+

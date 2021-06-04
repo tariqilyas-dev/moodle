@@ -5,7 +5,7 @@ $tasks = [
     [
         'classname' => 'local_file_reader\task\upload_file',
         'blocking' => 0,
-        'minute' => '*/15',
+        'minute' => '*',
         'hour' => '*',
         'day' => '*',
         'month' => '*',

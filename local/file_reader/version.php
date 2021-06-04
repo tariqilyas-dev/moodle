@@ -24,5 +24,5 @@ defined('MOODLE_INTERNAL') || die();
  
 $plugin->component = 'local_file_reader'; 
 // $version  = 2018120309.04;  
-$plugin->version = 2018123000; // The current plugin version (Date: YYYYMMDDXX)
+$plugin->version = 2018123101; // The current plugin version (Date: YYYYMMDDXX)
 $plugin->requires = 2018120309.04;

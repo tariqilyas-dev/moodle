@@ -24,41 +24,26 @@ require_once(__DIR__ . '/../../config.php');
 
 global $DB;
 
-$PAGE->set_url(new moodle_url('/local/file_reader/delete_file.php'));
+$PAGE->set_url(new moodle_url('/local/file_reader/delete_file2.php'));
 $PAGE->set_context(\context_system::instance());
 $PAGE->set_title('File Reader');
 
 
-echo $OUTPUT->header();
-
-$templatecontext = (object)[
-    'deleteurl1' => new moodle_url('/local/file_reader/delete_file1.php'),
-    'deleteurl2' => new moodle_url('/local/file_reader/delete_file2.php'),
-    'deleteurl3' => new moodle_url('/local/file_reader/delete_file3.php'),
-];
-
-
-echo $OUTPUT->render_from_template('local_file_reader/delete_file', $templatecontext);
 
 
 
 
-// $id = $_GET["id"];
-// echo $id;
-// if (condition) {
+$url = 'http://still-oasis-17398.herokuapp.com/uploads/116.json';
+$key = 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH';
+$data = array("key" => $key);
+$ch = curl_init($url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+curl_setopt($ch, CURLOPT_POSTFIELDS,http_build_query($data));
 
-// $url = 'http://still-oasis-17398.herokuapp.com/uploads/114.json';
-// $key = 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH';
-// $data = array("key" => $key);
-// $ch = curl_init($url);
-// curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-// curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
-// curl_setopt($ch, CURLOPT_POSTFIELDS,http_build_query($data));
+$response = curl_exec($ch);
+curl_close($ch);
 
-// $response = curl_exec($ch);
-// print_r($response);
-// curl_close($ch);
-	
-// }
 
-echo $OUTPUT->footer();
+
+echo "<script>window.location.href ='delete_file.php'</script>";

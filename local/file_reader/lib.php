@@ -22,7 +22,7 @@
 
 require_once(__DIR__ . '/../../config.php');
 
-global $DB;
+
 
 defined('MOODLE_INTERNAL') || die;
 
@@ -49,27 +49,23 @@ function get_curl($url, $post_fields) {
 			}
 		}
 
-// $pagedata = $DB->get_records('page');
+
+function local_upload_file()
+{ 
+global $DB;
 $pagedata = $DB->get_records_sql("SELECT * FROM {course_modules} ORDER BY id DESC LIMIT 1");
 
 
 foreach ($pagedata as $data) {
 }
-// echo $data->id;
-// echo $data->course;exit;
-$id = $data->id;
-$course = $data->course;
+	$id = $data->id;
+	$course = $data->course;
 
-function local_upload_file()
-{ 
-
-define('uploadurl', 'http://still-oasis-17398.herokuapp.com/uploads/112.json');
-	$parame      = array('key' => 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH','upload[course]' => $id,'upload[activity]' => $course); 
+	define('uploadurl', 'http://still-oasis-17398.herokuapp.com/uploads/118.json');
+	$parame      = array('key' => 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH','upload[course]' => $course,'upload[activity]' => $id); 
 	$get_res     = get_curl(uploadurl,$parame); 
 	$upload_responseArr = json_decode($get_res, true);
-	return $upload_responseArr;
-	// print_r($upload_responseArr);
 }	
 
-
 ?>
+
