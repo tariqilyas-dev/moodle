@@ -191,19 +191,8 @@ $responseArr = json_decode($response, true);
 
 $templatecontext = (object)[
     'searchdata' => array_values($responseArr),
-    // 'description' => substr(array_values($responseArr['description']),0,260),
 ];
 
 echo $OUTPUT->render_from_template('search/index', $templatecontext);
 
-
-// print_r($responseArr);
-// for($i= 0; $i< count($responseArr['data']); $i++){
-//     echo $responseArr['data'][$i]['description'];
-// }
-
 echo $OUTPUT->footer();
-
-
-
-
