@@ -29,11 +29,7 @@ $PAGE->set_context(\context_system::instance());
 $PAGE->set_title('File Reader');
 
 
-
-
-
-
-$url = 'http://still-oasis-17398.herokuapp.com/uploads/116.json';
+$url = 'http://still-oasis-17398.herokuapp.com/uploads/115.json';
 $key = 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH';
 $data = array("key" => $key);
 $ch = curl_init($url);
@@ -45,5 +41,5 @@ $response = curl_exec($ch);
 curl_close($ch);
 
 
-
+echo "<script type='text/javascript'>alert('File Deleted Successfully')</script>";
 echo "<script>window.location.href ='delete_file.php'</script>";

@@ -1,8 +1,7 @@
 # Local message
 
-This is a fiile reader plugin for moodle. It will upload, serach and delete the course and activity.
+This is a fiile reader plugin for moodle. It will upload, and delete the pdf uploded through the cURL.
 
 ## Functionality
-- UPload course and activity
-- Search the course and activity
-- Delete course and activity
+- UPload PDF
+- Delete PDF

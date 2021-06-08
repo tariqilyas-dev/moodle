@@ -41,13 +41,11 @@ $templatecontext = (object)[
 echo $OUTPUT->render_from_template('local_file_reader/delete_file', $templatecontext);
 
 
-
-
 // $id = $_GET["id"];
 // echo $id;
 // if (condition) {
 
-// $url = 'http://still-oasis-17398.herokuapp.com/uploads/114.json';
+// $url = 'http://still-oasis-17398.herokuapp.com/uploads/$id.json';
 // $key = 'muCNhTEogUDNwOGlFHMqwZzGHkjTVRGOQiFxSYRTCCEqbGGkXH';
 // $data = array("key" => $key);
 // $ch = curl_init($url);
